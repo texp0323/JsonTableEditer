@@ -1,7 +1,6 @@
 /* 테이블 뷰 관련 스타일 */
 
 #table-view {
-    display: flex;
     width: 100%;
     height: 100%;
     overflow: hidden;
@@ -18,6 +17,8 @@
     line-height: 1.4em !important; /* 폰트 크기에 비례한 줄 높이, 또는 고정 px 값 (예: 20px) */
     vertical-align: middle !important; /* 내용을 셀의 수직 중앙에 정렬 */
     box-sizing: border-box !important; /* 패딩과 테두리를 포함하여 크기 계산 */
+    font-family: var(--font-main);
+    font-size: 18px;
 }
 
 

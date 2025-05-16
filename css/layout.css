@@ -7,14 +7,23 @@ body {
     padding: var(--spacing-lg) var(--spacing-lg);
 }
 
+.json-controls-area { /* 상단 JSON 입력 및 제어 버튼 영역 */
+    padding: var(--spacing-lg);
+    background-color: var(--bg-panel);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-top: var(--spacing-md);
+    border: 1px solid var(--border-color);
+}
+
 .container {
     display: flex;
-    gap: var(--spacing-lg);
-    height: calc(100vh - 390px);
+    gap: var(--spacing-md);
+    height: 68vh;
 }
 
 .tab_title {
-    font-family: var(--font-main);
+    margin-top: 0;
     font-weight: bold;
     font-size: 1.5rem;
     line-height: 20px;
@@ -27,24 +36,13 @@ body {
     display: flex;
     flex-direction: column;
     padding: var(--spacing-lg);
-    height: 100%;
-    overflow: hidden;          /* 넘치는 내용 허용 */
+    height: 95%;
     white-space: nowrap;        /* 줄바꿈 방지 */
     border: 1px solid var(--border-color);
-    min-width: 200px;
 }
 
 .right-panel{
     width: 100%;
-}
-
-.json-controls-area { /* 상단 JSON 입력 및 제어 버튼 영역 */
-    padding: var(--spacing-lg);
-    background-color: var(--bg-panel);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-    margin-bottom: var(--spacing-lg);
-    border: 1px solid var(--border-color);
 }
 
 .json-controls-area textarea {
@@ -67,6 +65,7 @@ body {
     font-size: 1rem;
     font-weight: bold;
     transition: background-color var(--transition-speed);
+    font-family: var(--font-main);
 }
 
 .json-controls-area button:hover {

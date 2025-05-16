@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
+
 :root {
     /* 색상 변수 */
     --color-primary: #5aaf76;           /* 부드러운 녹색 */
@@ -11,8 +13,8 @@
     --color-dark: #444b53;              /* 부드러운 다크 그레이 */
 
     /* 배경색 */
-    --bg-main: #f7f8fa;
-    --bg-panel: #ffffff;
+    --bg-main: #4c4c4c;
+    --bg-panel: #ececec;
     --bg-hover: #eff1f3;
     --bg-selected: var(--color-primary);
 
@@ -40,7 +42,7 @@
     --spacing-xl: 24px;
 
     /* 폰트 */
-    --font-main: 'Nanum Gothic', sans-serif;
+    --font-main: 'Gowun Dodum', sans-serif;
     --font-mono: monospace;
 
     /* 테이블 관련 */

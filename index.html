@@ -7,16 +7,16 @@
     <link rel="stylesheet" href="main.css">
 </head>
 <body>
-<div class="json-controls-area">
-    <h2 class = "tab_title">JSON 데이터 제어</h2>
-    <textarea id="json-input"></textarea>
-    <button id="loadBtn">JSON 로드</button>
-    <button id="saveBtn">JSON 저장</button>
-    <button id="minifyBtn">JSON Minify</button>
-    <button id="uglifyBtn">JSON Uglify</button>
-    <button id="diffBtn">변경점 확인</button>
-    <span id="save-message" class="feedback-success"></span>
-    <div id="json-error" class="feedback-error"></div>
+<h2 class="title">Json 테이블 편집기</h2>
+<div class="search-container">
+    <input type="text" id="searchInput" placeholder="검색어를 입력 하세요">
+    <select id="searchTargetSelect">
+        <option value="both">Key & Value</option>
+        <option value="key">Key Only</option>
+        <option value="value">Value Only</option>
+    </select>
+    <div id="searchResultsDropdown" class="search-results-dropdown">
+    </div>
 </div>
 
 <div class="container" id="main-container">
@@ -31,6 +31,18 @@
         <div id="table-view"></div>
     </div>
 </div>
-<script type="module" src="src/script.js"></script>
+
+<div class="json-controls-area">
+    <h2 class="tab_title">JSON 데이터 제어</h2>
+    <textarea id="json-input" placeholder="여기에 Json을 입력 하세요"></textarea>
+    <button id="loadBtn">JSON 로드</button>
+    <button id="saveBtn">JSON 저장</button>
+    <button id="minifyBtn">JSON Minify</button>
+    <button id="uglifyBtn">JSON Uglify</button>
+    <button id="diffBtn">변경점 확인</button>
+    <span id="save-message" class="feedback-success"></span>
+    <div id="json-error" class="feedback-error"></div>
+</div>
+<script type="module" src="src/app.js"></script>
 </body>
 </html>

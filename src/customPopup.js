@@ -12,26 +12,34 @@ function showJsonDiffPopup(options) {
 
     let headerContent = '';
     let diffHtmlContent = '';
-    let orderedChangeData = [];
+    let orderedChangeData = []; // 이 변수는 diff 줄 순서 정렬 로직에 사용되던 것이므로, 키 순서와는 별개입니다.
 
+    // stableStringify 함수 수정: 키를 정렬하지 않고 원래 순서를 유지하도록 변경
     const stableStringify = (obj, space = 2) => {
-        const sortObject = (unsortedObj) => {
-            if (typeof unsortedObj !== 'object' || unsortedObj === null) {
-                return unsortedObj;
+        // 객체의 키 순서를 유지하면서 재귀적으로 처리하는 함수
+        const preserveKeyOrderAndProcess = (currentObj) => {
+            if (typeof currentObj !== 'object' || currentObj === null) {
+                return currentObj; // 원시 값이나 null은 그대로 반환
             }
-            if (Array.isArray(unsortedObj)) {
-                return unsortedObj.map(sortObject);
+            if (Array.isArray(currentObj)) {
+                // 배열은 각 요소를 재귀적으로 처리 (순서 유지됨)
+                return currentObj.map(preserveKeyOrderAndProcess);
             }
-            const sortedObj = {};
-            Object.keys(unsortedObj).sort((a, b) => a.localeCompare(b)).forEach(key => {
-                sortedObj[key] = sortObject(unsortedObj[key]);
+            // 객체는 Object.keys()를 사용하여 표준 속성 순서대로 처리
+            const processedObj = {};
+            Object.keys(currentObj).forEach(key => {
+                processedObj[key] = preserveKeyOrderAndProcess(currentObj[key]);
             });
-            return sortedObj;
+            return processedObj;
         };
+
         try {
-            return JSON.stringify(sortObject(obj), null, space);
+            // preserveKeyOrderAndProcess를 통해 객체를 처리한 후 문자열화합니다.
+            // 이렇게 하면 JSON.stringify가 처리된 객체의 키 순서를 따릅니다.
+            return JSON.stringify(preserveKeyOrderAndProcess(obj), null, space);
         } catch (e) {
-            console.error("Error stringifying object with sorted keys:", e);
+            console.error("Error stringifying object while preserving key order:", e);
+            // 오류 발생 시 기본 JSON.stringify 사용 (이것도 대부분 순서 유지)
             return JSON.stringify(obj, null, space);
         }
     };
@@ -46,11 +54,14 @@ function showJsonDiffPopup(options) {
     }
 
     if (jsonDiffData && jsonDiffData.left !== undefined && jsonDiffData.right !== undefined) {
-        if (typeof Diff.diffLines !== 'function') {
-            console.error('Diff 라이브러리(jsdiff)가 제대로 import되지 않았습니다.');
-            diffHtmlContent = '<p class="diff-popup-error-message">Diff 라이브러리 import 오류.</p>';
+        // 'Diff' 객체 (jsdiff 라이브러리) 존재 여부 확인
+        if (typeof Diff === 'undefined' || typeof Diff.diffLines !== 'function') {
+            console.error('Diff 라이브러리(jsdiff)가 제대로 import되지 않았거나 전역으로 사용 불가능합니다.');
+            diffHtmlContent = '<p class="diff-popup-error-message">Diff 라이브러리를 로드할 수 없습니다. (Diff is not defined)</p>';
+            headerContent = `<div class="diff-popup-header error">라이브러리 오류</div>`;
         } else {
             try {
+                // 수정된 stableStringify 함수 사용
                 const stringLeft = stableStringify(jsonDiffData.left);
                 const stringRight = stableStringify(jsonDiffData.right);
 
@@ -60,7 +71,14 @@ function showJsonDiffPopup(options) {
                 let totalRemoved = 0;
                 diffParts.forEach(part => {
                     const partValue = part.value || '';
-                    const numLines = part.count || partValue.split('\n').length - (partValue.endsWith('\n') && partValue.length > 1 ? 1 : 0);
+                    // Count lines accurately, considering the last line might not have a newline
+                    const linesArray = partValue.split('\n');
+                    let numLines = linesArray.length;
+                    if (linesArray[linesArray.length - 1] === '' && partValue.length > 0) { // Ends with newline, but not just an empty string
+                        numLines -=1;
+                    }
+                    if (partValue === '') numLines = 0; // Empty part means zero lines
+
                     if (part.added) {
                         totalAdded += numLines;
                     } else if (part.removed) {
@@ -68,12 +86,19 @@ function showJsonDiffPopup(options) {
                     }
                 });
 
+                // enrichedChangeBlocks 및 orderedChangeData 생성 로직 (이 부분은 변경된 줄 단위의 순서 정렬 로직이므로 유지)
+                // 이 로직은 JSON 객체 키 순서가 아닌, diff 결과로 나온 텍스트 줄들의 변경 순서를 다룹니다.
                 const enrichedChangeBlocks = [];
                 let currentOldLine = 1;
                 let currentNewLine = 1;
                 diffParts.forEach((part, index) => {
                     const partValue = part.value || '';
-                    const numLines = part.count || partValue.split('\n').length - (partValue.endsWith('\n') && partValue.length > 1 ? 1 : 0) ;
+                    const linesArray = partValue.split('\n');
+                    let numLines = linesArray.length;
+                    if (linesArray[linesArray.length - 1] === '' && partValue.length > 0) {
+                        numLines -=1;
+                    }
+                    if (partValue === '') numLines = 0;
 
                     if (part.removed) {
                         enrichedChangeBlocks.push({ originalPartIndex: index, part, sourceType: 'del', lineNumber: currentOldLine, numLines });
@@ -82,11 +107,18 @@ function showJsonDiffPopup(options) {
                         enrichedChangeBlocks.push({ originalPartIndex: index, part, sourceType: 'ins', lineNumber: currentNewLine, numLines });
                         currentNewLine += numLines;
                     } else {
+                        // 공통 부분은 currentOldLine과 currentNewLine을 모두 증가시킵니다.
+                        // 단, 이 부분을 enrichedChangeBlocks에 추가할 필요는 없습니다 (변경점 네비게이션 대상이 아님).
                         currentOldLine += numLines;
                         currentNewLine += numLines;
                     }
                 });
 
+                // ... (orderedChangeData를 생성하는 복잡한 순서 정렬 로직은 그대로 유지) ...
+                // 이 부분은 JSON 키 순서와는 별개로, diff 결과의 변경된 "줄"들을
+                // 사용자가 탐색하기 좋은 순서로 정렬하는 로직으로 보입니다.
+                // stableStringify 변경으로 인해 입력 문자열의 키 순서는 유지되지만,
+                // diff 결과 자체의 줄 순서 정렬은 이 로직이 담당합니다.
                 orderedChangeData = [];
                 let availablePoints = [...enrichedChangeBlocks];
                 let lastAddedPointDetails = null;
@@ -146,6 +178,8 @@ function showJsonDiffPopup(options) {
                         break;
                     }
                 }
+                // ... (orderedChangeData 생성 로직 끝) ...
+
 
                 let leftPaneHtml = '';
                 let rightPaneHtml = '';
@@ -158,26 +192,37 @@ function showJsonDiffPopup(options) {
 
                 diffParts.forEach((part, partIndex) => {
                     const partValue = part.value || '';
+                    // 끝에 불필요한 개행문자로 인해 빈 줄이 생기는 것을 방지
                     const lines = partValue.replace(/\n$/, '').split('\n');
-                    lines.forEach((line, lineIndexInPart) => {
-                        let lineId = '';
-                        if ((part.added || part.removed) && lineIndexInPart === 0 && orderedNavMap.has(partIndex)) {
-                            const navOrderIndex = orderedNavMap.get(partIndex);
-                            lineId = `id="diff-nav-target-${navOrderIndex}"`;
-                        }
 
-                        if (part.added) {
-                            leftPaneHtml += `<div class="diff-sbs-line"><span class="diff-sbs-line-num"></span><span class="diff-sbs-line-content"></span></div>\n`;
-                            rightPaneHtml += `<div ${lineId} class="diff-sbs-line diff-added"><span class="diff-sbs-line-num">${currentRightLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
-                        } else if (part.removed) {
-                            leftPaneHtml += `<div ${lineId} class="diff-sbs-line diff-removed"><span class="diff-sbs-line-num">${currentLeftLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
-                            rightPaneHtml += `<div class="diff-sbs-line"><span class="diff-sbs-line-num"></span><span class="diff-sbs-line-content"></span></div>\n`;
-                        } else {
-                            leftPaneHtml += `<div class="diff-sbs-line diff-common"><span class="diff-sbs-line-num">${currentLeftLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
-                            rightPaneHtml += `<div class="diff-sbs-line diff-common"><span class="diff-sbs-line-num">${currentRightLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
-                        }
-                    });
+                    // 만약 partValue 자체가 빈 문자열이면 lines는 [""]가 되므로, 실제 내용이 있는 줄만 처리
+                    if (lines.length === 1 && lines[0] === '' && partValue !== '') {
+                        // 이 경우는 거의 없지만, 방어적으로
+                    } else if (lines.length === 1 && lines[0] === '' && partValue === '') {
+                        // 정말 빈 부분이면 아무것도 안 함 (예: diffParts가 연속된 공백 변경을 만들 때)
+                    }
+                    else {
+                        lines.forEach((line, lineIndexInPart) => {
+                            let lineId = '';
+                            if ((part.added || part.removed) && lineIndexInPart === 0 && orderedNavMap.has(partIndex)) {
+                                const navOrderIndex = orderedNavMap.get(partIndex);
+                                lineId = `id="diff-nav-target-${navOrderIndex}"`;
+                            }
+
+                            if (part.added) {
+                                leftPaneHtml += `<div class="diff-sbs-line"><span class="diff-sbs-line-num"></span><span class="diff-sbs-line-content"></span></div>\n`;
+                                rightPaneHtml += `<div ${lineId} class="diff-sbs-line diff-added"><span class="diff-sbs-line-num">${currentRightLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
+                            } else if (part.removed) {
+                                leftPaneHtml += `<div ${lineId} class="diff-sbs-line diff-removed"><span class="diff-sbs-line-num">${currentLeftLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
+                                rightPaneHtml += `<div class="diff-sbs-line"><span class="diff-sbs-line-num"></span><span class="diff-sbs-line-content"></span></div>\n`;
+                            } else { // common
+                                leftPaneHtml += `<div class="diff-sbs-line diff-common"><span class="diff-sbs-line-num">${currentLeftLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
+                                rightPaneHtml += `<div class="diff-sbs-line diff-common"><span class="diff-sbs-line-num">${currentRightLineNumRender++}</span><span class="diff-sbs-line-content">${escapeHtml(line)}</span></div>\n`;
+                            }
+                        });
+                    }
                 });
+
 
                 diffHtmlContent = `
                     <div class="diff-sbs-container">
@@ -208,6 +253,9 @@ function showJsonDiffPopup(options) {
                     headerContent = `<div class="diff-popup-header">JSON 비교 결과</div>`;
                     if (stringLeft === stringRight) {
                         diffHtmlContent = '<p class="diff-no-changes-message">내용이 동일합니다. 변경 사항이 없습니다.</p>';
+                    } else {
+                        // 이 경우는 거의 없지만, totalAdded/Removed가 0인데 문자열이 다른 경우 (예: 공백만 다른 경우 diffLines가 감지 못할수도)
+                        diffHtmlContent = '<p class="diff-no-changes-message">변경 사항이 감지되지 않았지만 원본 문자열은 다릅니다.</p>';
                     }
                 }
 
@@ -218,8 +266,8 @@ function showJsonDiffPopup(options) {
             }
         }
     } else {
-        diffHtmlContent = '<p class="diff-no-data">Diff를 표시할 JSON 데이터가 제공되지 않았습니다.</p>'; // diff-no-data 클래스 추가
-        headerContent = `<div class="diff-popup-header error">데이터 오류</div>`; // error 클래스 추가
+        diffHtmlContent = '<p class="diff-no-data">Diff를 표시할 JSON 데이터가 제공되지 않았습니다.</p>';
+        headerContent = `<div class="diff-popup-header error">데이터 오류</div>`;
     }
 
     const finalHtml = `
@@ -228,6 +276,8 @@ function showJsonDiffPopup(options) {
             ${diffHtmlContent}
         </div>`;
 
+    // showCustomPopup 함수는 외부에 정의되어 있다고 가정합니다.
+    // 이 함수는 SweetAlert2를 사용하여 팝업을 띄우는 것으로 보입니다.
     return showCustomPopup({
         title: title,
         html: finalHtml,
@@ -238,6 +288,7 @@ function showJsonDiffPopup(options) {
             htmlContainer: 'custom-swal-html-container-text-diff'
         },
         didOpen: (popup) => {
+            // ... (이하 네비게이션 버튼 및 이벤트 리스너 로직은 이전과 동일하게 유지) ...
             const finalNavigableLines = [];
             if (orderedChangeData && orderedChangeData.length > 0) {
                 for (let i = 0; i < orderedChangeData.length; i++) {
@@ -260,19 +311,22 @@ function showJsonDiffPopup(options) {
                 if (!navContainer) return;
 
                 if (finalNavigableLines.length === 0) {
-                    // navContainer.style.display = 'none'; // CSS에서 처리하거나 필요시 유지
-                    if (nextBtn) nextBtn.disabled = true;
-                    if (prevBtn) prevBtn.disabled = true;
+                    if (nextBtn) nextBtn.style.display = 'none'; // 버튼 숨김
+                    if (prevBtn) prevBtn.style.display = 'none'; // 버튼 숨김
                     if (changeInfo) changeInfo.textContent = (totalAdded > 0 || totalRemoved > 0) ? `0 / 0` : '변경점 없음';
                 } else {
-                    navContainer.style.display = 'flex'; // CSS에서 #diff-navigation 에 flex가 이미 적용됨
+                    if (nextBtn) nextBtn.style.display = 'inline-block';
+                    if (prevBtn) prevBtn.style.display = 'inline-block';
                 }
 
                 if (changeInfo) {
                     if (currentChangeIndex >= 0 && currentChangeIndex < finalNavigableLines.length) {
                         changeInfo.textContent = `${currentChangeIndex + 1} / ${finalNavigableLines.length}`;
                     } else if (finalNavigableLines.length > 0) {
-                        changeInfo.textContent = `1 / ${finalNavigableLines.length}`;
+                        // 초기 상태 또는 인덱스 벗어난 경우 (이론상 발생 안 함)
+                        changeInfo.textContent = `0 / ${finalNavigableLines.length}`;
+                    } else {
+                        changeInfo.textContent = '변경점 없음';
                     }
                 }
                 if (nextBtn) nextBtn.disabled = currentChangeIndex >= finalNavigableLines.length - 1;
@@ -288,7 +342,16 @@ function showJsonDiffPopup(options) {
                 const lineElementToFocus = finalNavigableLines[indexToScroll];
 
                 if (lineElementToFocus) {
-                    lineElementToFocus.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    // scrollIntoView 대신 컨테이너의 scrollTop을 조절하여 좀 더 부드럽게
+                    const diffContainer = document.getElementById('diff-container');
+                    if (diffContainer) {
+                        const targetOffsetTop = lineElementToFocus.offsetTop;
+                        // 컨테이너의 중앙 부근으로 스크롤
+                        diffContainer.scrollTop = targetOffsetTop - (diffContainer.clientHeight / 2) + (lineElementToFocus.clientHeight / 2);
+                    } else {
+                        lineElementToFocus.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    }
+
                     lineElementToFocus.classList.add('diff-navigation-highlight');
                     previouslyHighlightedLineElement = lineElementToFocus;
                 }
@@ -297,9 +360,9 @@ function showJsonDiffPopup(options) {
             }
 
             if (finalNavigableLines.length > 0) {
-                scrollToChange(0);
+                scrollToChange(0); // 첫번째 변경점으로 자동 스크롤
             } else {
-                updateButtonAndNavInfo();
+                updateButtonAndNavInfo(); // 변경점 없을 때 버튼 상태 업데이트
             }
 
             if (nextBtn) {
@@ -322,15 +385,15 @@ function showJsonDiffPopup(options) {
                 if (finalNavigableLines.length === 0) return;
                 if (!nextBtn || !prevBtn) return;
 
-                if (event.key === 'ArrowDown') {
+                if (event.key === 'ArrowDown' || event.key === 'PageDown') {
                     event.preventDefault();
                     if (!nextBtn.disabled) nextBtn.click();
-                } else if (event.key === 'ArrowUp') {
+                } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
                     event.preventDefault();
                     if (!prevBtn.disabled) prevBtn.click();
                 }
             });
-            updateButtonAndNavInfo();
+            updateButtonAndNavInfo(); // 초기 버튼 상태 설정
         }
     });
 }

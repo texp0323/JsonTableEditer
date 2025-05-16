@@ -1,0 +1,67 @@
+/* 검색 테스트 */
+.search-container {
+    margin-bottom: 10px;
+    position: relative; /* For positioning the dropdown */
+    display: flex; /* Align input and select side-by-side */
+    gap: 5px; /* Space between input and select */
+}
+
+
+.title{
+    margin-top: 0;
+    color: var(--color-light);
+    text-shadow: 2px 1px 1px #000;
+}
+#searchInput {
+    flex-grow: 1; /* Allow search input to take available space */
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#searchTargetSelect {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+}
+
+.search-results-dropdown {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 100%; /* Position below the search input */
+    left: 0;
+    right: 0; /* Make dropdown full width of search-container */
+    background-color: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000; /* Ensure it's above other elements */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.search-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+}
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
+
+.search-result-item i { /* For path styling */
+    color: #555;
+    font-size: 0.9em;
+}
+
+.search-no-results {
+    padding: 10px;
+    color: #777;
+    text-align: center;
+}

@@ -6,6 +6,9 @@
 /* 레이아웃 */
 @import url('css/layout.css');
 
+/* 검색 */
+@import url('css/search.css');
+
 /* 컴포넌트별 스타일 */
 @import url('css/tree-view.css');
 @import url('css/table-view.css');
@@ -13,5 +16,5 @@
 /* 유틸리티 클래스 및 공통 스타일 */
 @import url('css/utils.css');
 
-/* diff  */
+/* diff */
 @import url('css/diff-view.css');
