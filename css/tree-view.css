@@ -1,0 +1,67 @@
+/* 트리 뷰 관련 스타일 */
+#tree-view-wrapper { /* 트리 뷰 스크롤 컨테이너 */
+    overflow-x: hidden;  /* 가로 스크롤 방지 */
+}
+
+/* 트리 노드 스타일 */
+.tree-node { /* 개별 트리 노드 한 줄 */
+    padding: 3px 0;
+    cursor: pointer;
+    border-radius: var(--border-radius-md);
+    white-space: nowrap; /* 줄 바꿈 방지 */
+    display: flex;
+    align-items: center;
+}
+
+.tree-node:hover > .node-text-wrapper { /* 노드 텍스트 부분 호버 효과 */
+    background-color: var(--bg-hover);
+}
+
+.tree-node.selected-node > .node-text-wrapper { /* 선택된 노드 텍스트 부분 스타일 */
+    background-color: var(--bg-selected);
+    color: var(--text-inverted);
+    border-radius: var(--border-radius-sm);
+}
+
+/* 선택된 노드 내부 텍스트 색상 강제 (배경색과의 대비 위함) */
+.tree-node.selected-node > .node-text-wrapper .tree-node-key,
+.tree-node.selected-node > .node-text-wrapper .tree-node-type,
+.tree-node.selected-node > .node-text-wrapper .tree-node-value {
+    color: var(--text-inverted) !important;
+}
+
+.node-text-wrapper { /* 토글 아이콘 제외한 텍스트 컨텐츠 (키, 타입, 값) */
+    display: inline-block;
+    padding: 2px 5px;
+    border-radius: var(--border-radius-sm);
+    transition: background-color 0.1s;
+}
+
+.toggle-icon { /* 트리 노드 펼치기/접기 아이콘 */
+    margin-right: 6px;
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    font-family: var(--font-mono);
+    user-select: none; /* 아이콘 텍스트 선택 방지 */
+    flex-shrink: 0;
+}
+
+.tree-node-key {
+    font-weight: bold;
+    color: var(--text-key);
+}
+
+.tree-node-type {
+    font-style: italic;
+    color: var(--text-light);
+    margin-left: var(--spacing-sm);
+}
+
+.tree-node-value { /* 기본형 값 표시용 (색상은 JS에서 타입별로 지정) */
+    /* 빈 규칙 - JS에서 동적으로 스타일 적용 */
+}
+
+.tree-node-children { /* 자식 노드들을 감싸며 들여쓰기 적용 */
+    padding-left: 22px;
+}

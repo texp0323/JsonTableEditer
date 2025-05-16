@@ -1,0 +1,119 @@
+/* 기존 diff-view.css 내용 */
+.diff-sbs-container { display: flex; width: 100%; font-family: monospace, Consolas, 'Courier New', Courier; font-size: 13px; border: 1px solid #ddd; }
+.diff-sbs-pane { flex: 1; min-width: 0; padding: 10px; overflow-x: auto; line-height: 1.4; }
+.diff-sbs-pane:first-child { border-right: 1px solid #ddd; }
+.diff-sbs-line { display: flex; white-space: pre-wrap; word-break: break-all; min-height: 1.4em; }
+.diff-sbs-line-num { flex-shrink: 0; width: 40px; color: rgba(0,0,0,0.3); text-align: right; padding-right: 10px; user-select: none; }
+.diff-sbs-line-content { flex-grow: 1; display: inline-block; }
+.diff-added .diff-sbs-line-content { background-color: #e6ffed; }
+.diff-removed .diff-sbs-line-content { background-color: #ffeef0; }
+.diff-navigation-highlight .diff-sbs-line-content { outline: 2px solid #FFBF00 !important; background-color: #fffbdd !important; }
+
+/* --- 추가/수정된 스타일 --- */
+.diff-popup-header { /* 기존 .diff-header 와 유사하나, ID 대신 클래스 사용 및 세부 조정 */
+    padding: 5px 0;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.diff-popup-error-message { /* <p style="color:red;"> */
+    color: red;
+}
+
+.diff-summary { /* <span style="margin-right: 15px; font-size: 0.9em;"> */
+    margin-right: 15px;
+    font-size: 0.9em;
+}
+
+.diff-summary-added { /* <strong style="color: green;"> */
+    color: green;
+}
+
+.diff-summary-removed { /* <strong style="color: red; margin-left: 5px;"> */
+    color: red;
+    margin-left: 5px;
+}
+
+#diff-navigation { /* 기존 스타일 유지 및 id 셀렉터로 정의 */
+    padding: 5px 0;
+    text-align: center;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#prev-change-btn.swal2-styled { /* <button id="prev-change-btn" class="swal2-styled" style="margin-right: 5px;"> */
+    margin-right: 5px;
+}
+
+#next-change-btn.swal2-styled { /* <button id="next-change-btn" class="swal2-styled" style="margin-left: 5px;"> */
+    margin-left: 5px;
+}
+
+#current-change-info { /* <span id="current-change-info" style="margin-left: 15px; font-size: 0.9em;"> */
+    margin-left: 15px;
+    font-size: 0.9em;
+}
+
+.diff-no-changes-message { /* <p style="text-align: center; padding: 20px;"> */
+    text-align: center;
+    padding: 20px;
+}
+
+.diff-popup-header.error { /* <div style="padding: 5px 0; font-weight: bold; border-bottom: 1px solid #eee; margin-bottom:10px; text-align: left; color:red;"> */
+    color: red;
+}
+
+#diff-container { /* <div id="diff-container" style="text-align: left; max-height: 70vh; overflow-y: auto;"> */
+    text-align: left;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* SweetAlert2 폼 관련 스타일 (showCustomFormPopup) */
+#custom-popup-form {
+    text-align: left;
+}
+
+.form-item {
+    margin-bottom: 15px;
+}
+
+.form-item label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-item input[type="text"],
+.form-item input[type="password"], /* 다른 input 타입도 필요시 추가 */
+.form-item textarea,
+.form-item select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box; /* padding과 border가 width에 포함되도록 */
+}
+
+.form-item input[type="checkbox"],
+.form-item input[type="radio"] {
+    margin-right: 8px;
+}
+
+.form-item .checkbox-group, /* 필요시 checkbox/radio 그룹핑용 div 스타일 */
+.form-item .radio-group-item {
+    display: flex;
+    align-items: center;
+}
+.form-item .radio-group-item { /* 라디오 버튼 아이템 간 간격 */
+    margin-bottom: 5px;
+}
+
+
+/* 기존 button:disabled 스타일은 유지 */
+button:disabled {
+    opacity: 0.5;
+}

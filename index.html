@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON 테이블 편집기</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+<div class="json-controls-area">
+    <h2 class = "tab_title">JSON 데이터 제어</h2>
+    <textarea id="json-input"></textarea>
+    <button id="loadBtn">JSON 로드</button>
+    <button id="saveBtn">JSON 저장</button>
+    <button id="minifyBtn">JSON Minify</button>
+    <button id="uglifyBtn">JSON Uglify</button>
+    <button id="diffBtn">변경점 확인</button>
+    <span id="save-message" class="feedback-success"></span>
+    <div id="json-error" class="feedback-error"></div>
+</div>
+
+<div class="container" id="main-container">
+    <div class="panel left-panel">
+        <h2 class = "tab_title">JSON 트리 뷰</h2>
+        <div id="tree-view-wrapper">
+            <div id="tree-view"></div>
+        </div>
+    </div>
+    <div class="panel right-panel">
+        <h2 class = "tab_title">데이터 테이블 뷰</h2>
+        <div id="table-view"></div>
+    </div>
+</div>
+<script type="module" src="src/script.js"></script>
+</body>
+</html>

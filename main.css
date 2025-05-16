@@ -1,0 +1,17 @@
+/* main.css - 모든 CSS 파일을 가져오는 메인 파일 */
+
+/* 기본 변수 및 설정 */
+@import url('css/variables.css');
+
+/* 레이아웃 */
+@import url('css/layout.css');
+
+/* 컴포넌트별 스타일 */
+@import url('css/tree-view.css');
+@import url('css/table-view.css');
+
+/* 유틸리티 클래스 및 공통 스타일 */
+@import url('css/utils.css');
+
+/* diff  */
+@import url('css/diff-view.css');
