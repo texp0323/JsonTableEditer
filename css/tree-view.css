@@ -1,7 +1,4 @@
 /* 트리 뷰 관련 스타일 */
-#tree-view-wrapper { /* 트리 뷰 스크롤 컨테이너 */
-    overflow-y: scroll;
-}
 
 /* 트리 노드 스타일 */
 .tree-node { /* 개별 트리 노드 한 줄 */
