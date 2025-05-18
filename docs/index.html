@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON 테이블 편집기</title>
-  <script type="module" crossorigin src="/JsonTableEditer/assets/index-DuDEOl9g.js"></script>
-  <link rel="stylesheet" crossorigin href="/JsonTableEditer/assets/index-C9OdztyA.css">
+  <script type="module" crossorigin src="/JsonTableEditer/assets/index-BEnGf4-p.js"></script>
+  <link rel="stylesheet" crossorigin href="/JsonTableEditer/assets/index-CbraUvVu.css">
 </head>
 <body>
 <h2 class="title">Json 테이블 편집기</h2>
@@ -16,33 +16,32 @@
         <option value="key">Key Only</option>
         <option value="value">Value Only</option>
     </select>
-    <div id="searchResultsDropdown" class="search-results-dropdown">
-    </div>
+    <div id="searchResultsDropdown" class="search-results-dropdown"></div>
 </div>
 
-<div class="container" id="main-container">
-    <div class="panel left-panel">
-        <h2 class = "tab_title">JSON 트리 뷰</h2>
+<div class="main-layout-triple-panel"> <div class="panel json-control-panel"> <h2 class="tab_title">JSON 데이터 제어</h2>
+    <textarea id="json-input" placeholder="여기에 Json을 입력 하거나, 드래그 앤 드롭으로 넣어주세요."></textarea>
+    <button id="loadBtn">📥 JSON 로드</button>
+    <button id="saveBtn">💾 JSON 저장</button>
+    <button id="minifyBtn">➡️⬅️ JSON 압축</button>
+    <button id="uglifyBtn">✨ JSON 예쁘게</button>
+    <button id="diffBtn">🔍 변경점 확인</button>
+    <button id="loadFromFileBtn">📂 파일 로드</button>
+    <button id="saveToFileBtn">📄 파일로 저장</button>
+    <span id="save-message" class="feedback-success"></span>
+    <div id="json-error" class="feedback-error"></div>
+</div>
+
+    <div class="resizer-vertical" id="resizer-1"></div> <div class="panel tree-view-panel"> <h2 class="tab_title">JSON 트리 뷰</h2>
         <div id="tree-view-wrapper">
             <div id="tree-view"></div>
         </div>
     </div>
-    <div class="panel right-panel">
-        <h2 class = "tab_title">데이터 테이블 뷰</h2>
+
+    <div class="resizer-vertical" id="resizer-2"></div> <div class="panel table-view-panel"> <h2 class="tab_title">데이터 테이블 뷰</h2>
         <div id="table-view"></div>
     </div>
 </div>
-
-<div class="json-controls-area">
-    <h2 class="tab_title">JSON 데이터 제어</h2>
-    <textarea id="json-input" placeholder="여기에 Json을 입력 하세요"></textarea>
-    <button id="loadBtn">JSON 로드</button>
-    <button id="saveBtn">JSON 저장</button>
-    <button id="minifyBtn">JSON Minify</button>
-    <button id="uglifyBtn">JSON Uglify</button>
-    <button id="diffBtn">변경점 확인</button>
-    <span id="save-message" class="feedback-success"></span>
-    <div id="json-error" class="feedback-error"></div>
-</div>
+
 </body>
 </html>
