@@ -16,7 +16,7 @@
 
 .tree-node.selected-node > .node-text-wrapper { /* 선택된 노드 텍스트 부분 스타일 */
     background-color: var(--bg-selected);
-    color: var(--text-inverted);
+    color: var(--text-accent);
     border-radius: var(--border-radius-sm);
 }
 
@@ -24,7 +24,7 @@
 .tree-node.selected-node > .node-text-wrapper .tree-node-key,
 .tree-node.selected-node > .node-text-wrapper .tree-node-type,
 .tree-node.selected-node > .node-text-wrapper .tree-node-value {
-    color: var(--text-inverted) !important;
+    color: var(--text-accent) !important;
 }
 
 .node-text-wrapper { /* 토글 아이콘 제외한 텍스트 컨텐츠 (키, 타입, 값) */

@@ -1,8 +1,8 @@
-/* layout.css */
+/* layout.css - Claude 스타일 */
 
 html {
     margin: 0;
-    box-sizing: border-box; /* 모든 요소에 border-box 적용을 위함 */
+    box-sizing: border-box;
 }
 *, *:before, *:after {
     box-sizing: inherit;
@@ -12,32 +12,33 @@ body {
     font-family: var(--font-main);
     background-color: var(--bg-main);
     color: var(--text-main);
-    overflow: hidden; /* body 자체 스크롤 방지, 각 패널 내부에서 스크롤 처리 */
+    overflow: hidden;
     padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
-    height: 100vh; /* body 높이를 화면 전체로 설정 */
+    height: 100vh;
     margin: 0;
 }
 
-.search-container { /* 검색창 영역 스타일 (기존 search.css에서 가져오거나 여기에 정의) */
+.search-container {
     margin-bottom: var(--spacing-md);
-    /* 기타 필요한 스타일 */
-}
-.title { /* 타이틀 스타일 (기존 search.css에서 가져오거나 여기에 정의) */
-    margin-top: 0;
-    margin-bottom: var(--spacing-sm); /* 검색창과의 간격 */
-    color: var(--color-light);
-    text-shadow: 2px 1px 1px #000;
 }
 
+.title {
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-inverted);
+    font-weight: 600;
+    font-size: 1.75rem;
+    letter-spacing: -0.01em;
+}
 
 .main-layout-triple-panel {
     display: flex;
-    flex-direction: row; /* 패널들을 가로로 배치 */
-    flex-grow: 1; /* body 내에서 남은 세로 공간을 모두 차지 */
-    overflow: hidden; /* 이 컨테이너 자체가 넘치는 것을 방지 */
-    /* gap: var(--spacing-md); */ /* 리사이저가 직접 붙으므로 gap 제거 */
+    flex-direction: row;
+    flex-grow: 1;
+    overflow: hidden;
+    gap: 2px
 }
 
 .panel {
@@ -45,47 +46,66 @@ body {
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-md);
     display: flex;
-    flex-direction: column; /* 패널 내부 컨텐츠는 세로로 배치 */
+    flex-direction: column;
     padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    overflow: hidden; /* 패널 내용이 넘칠 경우 내부에서 스크롤 처리 */
-    flex-shrink: 0; /* JS로 너비 제어 시 중요 */
-    /* flex-grow는 JS로 비율 설정 시 사용 안 함, flex-basis로 제어 */
-    min-width: 50px; /* 패널이 너무 작아지지 않도록 최소 너비 (조정 가능) */
+    border: none; /* 테두리 제거하고 그림자로 구분 */
+    overflow: hidden;
+    flex-shrink: 0;
+    min-width: 50px;
+    transition: box-shadow var(--transition-speed);
+    /* 플렉스 그로우 제거 - 원래 JS에서 너비 관리 */
 }
 
-/* 각 패널의 초기 너비 (flex-basis) 설정 - JS에서 화면 크기에 따라 재계산 */
-.json-control-panel {
-    /* flex-basis: 20%; */ /* JS에서 설정 */
-    overflow-y: auto; /* 내용이 많을 경우 스크롤 */
-}
-.tree-view-panel {
-    /* flex-basis: 20%; */ /* JS에서 설정 */
-}
-.table-view-panel {
-    /* flex-basis: 60%; */ /* JS에서 설정 */
+.panel:hover {
+    box-shadow: var(--shadow-lg);
 }
 
-
-.panel .tab_title { /* 패널 내부 제목 공통 스타일 */
+/* 패널 타이틀 스타일 */
+.panel .tab_title {
     margin-top: 0;
-    margin-bottom: var(--spacing-sm);
-    font-weight: bold;
-    font-size: 1.5rem; /* 기존 스타일 유지 또는 조정 */
-    flex-shrink: 0; /* 제목이 줄어들지 않도록 */
+    margin-bottom: var(--spacing-md);
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+    padding-bottom: var(--spacing-sm);
+    position: relative;
+}
+
+/* 패널 타이틀 아래 구분선 */
+.panel .tab_title::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    border-radius: 2px;
 }
 
 /* JSON 컨트롤 패널 내부 요소 스타일 */
 .json-control-panel textarea {
     width: 100%;
-    flex-grow: 1; /* 사용 가능한 수직 공간 채우기 */
+    flex-grow: 1;
     min-height: 100px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-md);
     font-family: var(--font-mono);
     font-size: 0.9rem;
     margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    resize: none;
+    transition: border-color var(--transition-speed);
 }
+
+.json-control-panel textarea:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(142, 85, 234, 0.2);
+}
+
 .json-control-panel button {
     background-color: var(--color-primary);
     color: var(--text-inverted);
@@ -93,53 +113,116 @@ body {
     border: none;
     border-radius: var(--border-radius-md);
     cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
+    font-size: 0.9rem;
+    font-weight: 500;
     font-family: var(--font-main);
     margin-top: var(--spacing-xs);
     flex-shrink: 0;
+    transition: background-color var(--transition-speed), transform 0.1s;
 }
+
 .json-control-panel button:hover {
     background-color: var(--color-primary-dark);
 }
+
+.json-control-panel button:active {
+    transform: translateY(1px);
+}
+
 .json-control-panel .feedback-success,
 .json-control-panel .feedback-error {
     margin-top: var(--spacing-sm);
     font-size: 0.9rem;
     flex-shrink: 0;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+}
+
+.json-control-panel .feedback-success {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--color-success);
+}
+
+.json-control-panel .feedback-error {
+    background-color: rgba(248, 113, 113, 0.1);
+    color: var(--color-danger);
 }
 
 .json-control-panel.dragover-active {
-    border: 3px dashed #007bff; /* 드래그 중일 때 테두리 스타일 변경 */
-    background-color: #e9f5ff; /* 드래그 중일 때 배경색 변경 (선택 사항) */
-    box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.5); /* 내부 그림자 효과 (선택 사항) */
+    border: 2px dashed var(--color-primary);
+    background-color: rgba(142, 85, 234, 0.05);
+    box-shadow: inset 0 0 10px rgba(142, 85, 234, 0.1);
 }
-
 
 /* 트리 뷰 및 테이블 뷰 스크롤 래퍼 */
-#tree-view-wrapper, #table-view {
-    flex-grow: 1; /* 패널 내에서 남은 공간을 채움 */
-    overflow-y: auto; /* 내용이 넘치면 세로 스크롤 */
-    min-height: 0; /* flex 아이템 내부 스크롤을 위해 중요 */
-}
-#table-view { /* Handsontable 자체가 스크롤을 관리할 수 있으므로 조정 가능 */
-    overflow: hidden; /* Handsontable이 자체 스크롤을 관리 */
-    display: flex;
-    flex-direction: column;
+#tree-view-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    min-height: 0;
+    border-radius: var(--border-radius-md);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-secondary) transparent;
 }
 
+/* 테이블 뷰는 별도로 정의하여 충돌 방지 */
+#table-view {
+    flex-grow: 1;
+    min-height: 0;
+    border-radius: var(--border-radius-md);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-secondary) transparent;
+}
+
+#tree-view-wrapper::-webkit-scrollbar,
+#table-view::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+#tree-view-wrapper::-webkit-scrollbar-track,
+#table-view::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#tree-view-wrapper::-webkit-scrollbar-thumb,
+#table-view::-webkit-scrollbar-thumb {
+    background-color: var(--color-secondary);
+    border-radius: 20px;
+}
+
+#table-view {
+    overflow: auto; /* 'hidden'에서 'auto'로 변경하여 필요 시 스크롤 허용 */
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* 너비 100% 추가 */
+    height: 100%; /* 높이 100% 추가 */
+}
 
 .resizer-vertical {
     flex-shrink: 0;
-    width: 10px; /* 리사이저 두께 */
+    width: 6px;
     cursor: col-resize;
-    background-color: var(--bg-main); /* 기본 배경색 */
-    /* border-left: 1px solid var(--border-color); */ /* 시각적 구분선 원하면 추가 */
-    /* border-right: 1px solid var(--border-color); */
+    background-color: transparent;
     position: relative;
-    z-index: 10; /* 다른 요소 위에 있도록 */
+    z-index: 10;
     transition: background-color 0.2s;
 }
-.resizer-vertical:hover {
-    background-color: var(--color-primary-dark); /* 호버 시 색상 변경 */
+
+.resizer-vertical::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 40px;
+    width: 4px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    transition: background-color 0.2s, height 0.2s;
+}
+
+.resizer-vertical:hover::after {
+    background-color: var(--color-primary);
+    height: 60px;
 }
