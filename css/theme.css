@@ -89,9 +89,6 @@ body.theme-classic-purple {
     --diff-navi-highlight-outline: var(--color-warning); /* 다른 테마의 강조색을 빌려옴, 필요시 보라계열로 변경 */
     --diff-navi-highlight-bg: #fffbdd;
     --diff-header-border-bottom: #eee;
-    --diff-error-text: var(--color-danger);
-    --diff-summary-added-text: var(--color-success);
-    --diff-summary-removed-text: var(--color-danger);
 }
 
 /* ========================================================================== */
@@ -148,9 +145,6 @@ body.theme-high-contrast-dark {
     --diff-navi-highlight-outline: var(--color-warning);
     --diff-navi-highlight-bg: color-mix(in srgb, var(--color-warning) 30%, transparent);
     --diff-header-border-bottom: #404852;
-    --diff-error-text: var(--color-danger);
-    --diff-summary-added-text: var(--color-success);
-    --diff-summary-removed-text: var(--color-danger);
 }
 
 /* ========================================================================== */
@@ -207,7 +201,4 @@ body.theme-soft-mint {
     --diff-navi-highlight-outline: #4DB6AC;
     --diff-navi-highlight-bg: rgba(77, 182, 172, 0.2);
     --diff-header-border-bottom: #D1D9E0;
-    --diff-error-text: #B71C1C;
-    --diff-summary-added-text: #2E7D32;
-    --diff-summary-removed-text: #C62828;
 }

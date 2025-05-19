@@ -40,4 +40,14 @@
     --border-radius-md: 8px;
     --border-radius-lg: 12px;
     --transition-speed: 0.2s;
+
+    --feedback-success-bg: rgba(76, 175, 80, 0.1);
+    --feedback-success-text: var(--color-success);
+    --feedback-error-bg: rgba(248, 113, 113, 0.1);
+    --feedback-error-text: var(--color-danger);
+
+    /* Diff 뷰 관련 고정 텍스트 색상 변수 */
+    --diff-error-text-color: var(--color-danger);
+    --diff-summary-added-text-color: var(--color-success);
+    --diff-summary-removed-text-color: var(--color-danger);
 }
