@@ -1,42 +1,82 @@
-/* 기존 diff-view.css 내용 */
-.diff-sbs-container { display: flex; width: 100%; font-family: monospace, Consolas, 'Courier New', Courier; font-size: 13px; border: 1px solid #ddd; }
-.diff-sbs-pane { flex: 1; min-width: 0; padding: 10px; overflow-x: auto; line-height: 1.4; }
-.diff-sbs-pane:first-child { border-right: 1px solid #ddd; }
-.diff-sbs-line { display: flex; white-space: pre-wrap; word-break: break-all; min-height: 1.4em; }
-.diff-sbs-line-num { flex-shrink: 0; width: 40px; color: rgba(0,0,0,0.3); text-align: right; padding-right: 10px; user-select: none; }
-.diff-sbs-line-content { flex-grow: 1; display: inline-block; }
-.diff-added .diff-sbs-line-content { background-color: #e6ffed; }
-.diff-removed .diff-sbs-line-content { background-color: #ffeef0; }
-.diff-navigation-highlight .diff-sbs-line-content { outline: 2px solid #FFBF00 !important; background-color: #fffbdd !important; }
+.diff-sbs-container {
+    display: flex;
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    border: 1px solid var(--diff-sbs-border);
+    background-color: var(--bg-panel);
+    color: var(--text-main);
+}
+.diff-sbs-pane {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    overflow-x: auto;
+    line-height: 1.4;
+}
+.diff-sbs-pane:first-child {
+    border-right: 1px solid var(--diff-sbs-pane1-border-right);
+}
+.diff-sbs-line {
+    display: flex;
+    white-space: pre-wrap;
+    word-break: break-all;
+    min-height: 1.4em;
+}
+.diff-sbs-line-num {
+    flex-shrink: 0;
+    width: 40px;
+    color: var(--text-muted);
+    text-align: right;
+    padding-right: 10px;
+    user-select: none;
+}
+.diff-sbs-line-content {
+    flex-grow: 1;
+    display: inline-block;
+}
+.diff-added .diff-sbs-line-content {
+    background-color: var(--diff-added-bg);
+}
+.diff-removed .diff-sbs-line-content {
+    background-color: var(--diff-removed-bg);
+}
+.diff-navigation-highlight .diff-sbs-line-content {
+    outline: 2px solid var(--diff-navi-highlight-outline) !important;
+    background-color: var(--diff-navi-highlight-bg) !important;
+}
 
-/* --- 추가/수정된 스타일 --- */
-.diff-popup-header { /* 기존 .diff-header 와 유사하나, ID 대신 클래스 사용 및 세부 조정 */
+.diff-popup-header {
     padding: 5px 0;
     font-weight: bold;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--diff-header-border-bottom);
     margin-bottom: 10px;
     text-align: left;
+    color: var(--panel-title-color);
 }
 
-.diff-popup-error-message { /* <p style="color:red;"> */
-    color: red;
+.diff-popup-error-message {
+    color: var(--diff-error-text-color);
 }
 
-.diff-summary { /* <span style="margin-right: 15px; font-size: 0.9em;"> */
+.diff-summary {
     margin-right: 15px;
     font-size: 0.9em;
+    color: var(--text-light);
 }
 
-.diff-summary-added { /* <strong style="color: green;"> */
-    color: green;
+.diff-summary-added {
+    color: var(--diff-summary-added-text-color);
+    font-weight: bold;
 }
 
-.diff-summary-removed { /* <strong style="color: red; margin-left: 5px;"> */
-    color: red;
+.diff-summary-removed {
+    color: var(--diff-summary-removed-text-color);
     margin-left: 5px;
+    font-weight: bold;
 }
 
-#diff-navigation { /* 기존 스타일 유지 및 id 셀렉터로 정의 */
+#diff-navigation {
     padding: 5px 0;
     text-align: center;
     margin-bottom: 10px;
@@ -45,37 +85,39 @@
     justify-content: center;
 }
 
-#prev-change-btn.swal2-styled { /* <button id="prev-change-btn" class="swal2-styled" style="margin-right: 5px;"> */
+#prev-change-btn.swal2-styled {
     margin-right: 5px;
 }
 
-#next-change-btn.swal2-styled { /* <button id="next-change-btn" class="swal2-styled" style="margin-left: 5px;"> */
+#next-change-btn.swal2-styled {
     margin-left: 5px;
 }
 
-#current-change-info { /* <span id="current-change-info" style="margin-left: 15px; font-size: 0.9em;"> */
+#current-change-info {
     margin-left: 15px;
     font-size: 0.9em;
+    color: var(--text-light);
 }
 
-.diff-no-changes-message { /* <p style="text-align: center; padding: 20px;"> */
+.diff-no-changes-message {
     text-align: center;
     padding: 20px;
+    color: var(--text-muted);
 }
 
-.diff-popup-header.error { /* <div style="padding: 5px 0; font-weight: bold; border-bottom: 1px solid #eee; margin-bottom:10px; text-align: left; color:red;"> */
-    color: red;
+.diff-popup-header.error {
+    color: var(--diff-error-text-color);
 }
 
-#diff-container { /* <div id="diff-container" style="text-align: left; max-height: 70vh; overflow-y: auto;"> */
+#diff-container {
     text-align: left;
     max-height: 70vh;
     overflow-y: auto;
 }
 
-/* SweetAlert2 폼 관련 스타일 (showCustomFormPopup) */
 #custom-popup-form {
     text-align: left;
+    color: var(--text-main);
 }
 
 .form-item {
@@ -85,35 +127,44 @@
 .form-item label {
     display: block;
     margin-bottom: 5px;
+    color: var(--text-light);
 }
 
 .form-item input[type="text"],
-.form-item input[type="password"], /* 다른 input 타입도 필요시 추가 */
+.form-item input[type="password"],
 .form-item textarea,
 .form-item select {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box; /* padding과 border가 width에 포함되도록 */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-sizing: border-box;
+    background-color: var(--search-input-bg);
+    color: var(--search-input-text);
 }
+.form-item input[type="text"]:focus,
+.form-item input[type="password"]:focus,
+.form-item textarea:focus,
+.form-item select:focus {
+    border-color: var(--outline-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--outline-color) 20%, transparent);
+}
+
 
 .form-item input[type="checkbox"],
 .form-item input[type="radio"] {
     margin-right: 8px;
 }
 
-.form-item .checkbox-group, /* 필요시 checkbox/radio 그룹핑용 div 스타일 */
+.form-item .checkbox-group,
 .form-item .radio-group-item {
     display: flex;
     align-items: center;
 }
-.form-item .radio-group-item { /* 라디오 버튼 아이템 간 간격 */
+.form-item .radio-group-item {
     margin-bottom: 5px;
 }
 
-
-/* 기존 button:disabled 스타일은 유지 */
 button:disabled {
     opacity: 0.5;
 }

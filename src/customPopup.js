@@ -92,7 +92,7 @@ function showJsonDiffPopup(options) {
                 diffHtmlContent = `<div class="diff-sbs-container"><div class="diff-sbs-pane" id="diff-left-pane">${leftPaneHtml}</div><div class="diff-sbs-pane" id="diff-right-pane">${rightPaneHtml}</div></div>`;
                 if (orderedChangeData.length > 0 || totalAdded > 0 || totalRemoved > 0) {
                     let summaryHtml = ''; if (totalAdded > 0 || totalRemoved > 0) summaryHtml = `<span class="diff-summary"><strong class="diff-summary-added">+${totalAdded}</strong> <strong class="diff-summary-removed">-${totalRemoved}</strong></span>`;
-                    headerContent = `<div class="diff-popup-header">JSON 비교 결과 (텍스트 기반 Side-by-Side)</div><div id="diff-navigation">${summaryHtml}<button id="prev-change-btn" class="swal2-styled">이전 변경점</button><button id="next-change-btn" class="swal2-styled">다음 변경점</button><span id="current-change-info"></span></div>`;
+                    headerContent = `<div class="diff-popup-header">JSON 비교 결과</div><div id="diff-navigation">${summaryHtml}<button id="prev-change-btn" class="swal2-styled">이전 변경점</button><button id="next-change-btn" class="swal2-styled">다음 변경점</button><span id="current-change-info"></span></div>`;
                 } else {
                     headerContent = `<div class="diff-popup-header">JSON 비교 결과</div>`;
                     if (stringLeft === stringRight) diffHtmlContent = '<p class="diff-no-changes-message">내용이 동일합니다. 변경 사항이 없습니다.</p>';

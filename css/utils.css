@@ -1,26 +1,22 @@
-/* 스크롤바 및 공통 유틸리티 스타일 */
-
-/* 스크롤바 스타일 커스터마이징 */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--scrollbar-track-bg);
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: var(--scrollbar-thumb-bg);
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
+    background: var(--scrollbar-thumb-hover-bg);
 }
 
-/* 공통 유틸리티 클래스 */
 .hidden {
     display: none !important;
 }
@@ -68,7 +64,6 @@
     justify-content: space-between;
 }
 
-/* 간격 유틸리티 */
 .mt-xs { margin-top: var(--spacing-xs); }
 .mt-sm { margin-top: var(--spacing-sm); }
 .mt-md { margin-top: var(--spacing-md); }

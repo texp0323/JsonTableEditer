@@ -4,9 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON 테이블 편집기</title>
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="main.css"> <meta name="generator" content="Google Gemini">
+    <link rel="stylesheet" href="themes.css">
 </head>
 <body>
+
+<div class="theme-switcher">
+    <button class="theme-button" id="theme-btn-1" title="고대비 다크 (Charcoal & Amber)" style="background-color: var(--color-warning);"></button>
+    <button class="theme-button" id="theme-btn-2" title="클래식 라이트 (Classic Purple)" style="background-color: var(--color-primary);"></button>
+    <button class="theme-button" id="theme-btn-3" title="소프트 민트 (Mint & Gray)" style="background-color: #4DB6AC;"></button>
+</div>
+
 <h2 class="title">Json 테이블 편집기</h2>
 <div class="search-container">
     <input type="text" id="searchInput" placeholder="검색어를 입력 하세요">
@@ -43,5 +51,6 @@
 </div>
 
 <script type="module" src="src/app.js"></script>
+<script src="src/theme-switcher.js"></script>
 </body>
 </html>

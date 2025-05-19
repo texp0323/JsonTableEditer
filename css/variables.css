@@ -1,54 +1,41 @@
 :root {
-    /* 색상 변수 */
-    --color-primary: #7b47d6;           /* 보라색 (Claude 메인 컬러) */
-    --color-primary-dark: #5a309e;      /* 어두운 보라색 */
-    --color-secondary: #9aa0a6;         /* 연한 회색 */
-    --color-success: #4CAF50;           /* 성공색 */
-    --color-danger: #f87171;            /* 경고색 */
-    --color-warning: #f59e0b;           /* 주황색 */
-    --color-info: #60a5fa;              /* 파란색 */
-    --color-light: #f9fafb;             /* 아주 연한 회색 */
-    --color-dark: #374151;              /* 다크 그레이 */
+    --color-primary: #7b47d6;
+    --color-primary-dark: #5a309e;
+    --color-secondary: #9aa0a6;
+    --color-success: #4CAF50;
+    --color-danger: #f87171;
+    --color-warning: #f59e0b;
+    --color-info: #60a5fa;
+    --color-light: #f9fafb;
+    --color-dark: #374151;
 
-    /* 배경색 */
-    --bg-main: #2a2b38;                 /* 어두운 배경 (Claude 스타일) */
-    --bg-panel: #ffffff;                /* 흰색 패널 */
-    --bg-hover: #f3f4f6;                /* 호버 효과 */
-    --bg-selected: rgba(142, 85, 234, 0.1); /* 선택 효과 (반투명 보라색) */
+    --text-main-default: #1f2937;
+    --text-light-default: #4b5563;
+    --text-muted-default: #6b7280;
+    --text-inverted-default: #ffffff;
+    --text-key-default: var(--color-primary-dark);
+    --text-accent-default: #ea5757;
 
-    /* 텍스트 색상 */
-    --text-main: #1f2937;               /* 어두운 회색 */
-    --text-light: #4b5563;              /* 중간 회색 */
-    --text-muted: #6b7280;              /* 연한 회색 */
-    --text-key: var(--color-primary-dark); /* 강조 텍스트 */
-    --text-inverted: #ffffff;           /* 흰색 텍스트 */
-    --text-accent: #ea5757;
+    --border-color-default: #e5e7eb;
+    --bg-hover-default: #f3f4f6;
+    --bg-selected-default: rgba(142, 85, 234, 0.1);
 
-    /* 테두리 색상 */
-    --border-color: #e5e7eb;
-    --outline-color: var(--color-primary);
+    --table-header-bg-default: #f9fafb;
+    --table-cell-focus-bg-default: rgba(142, 85, 234, 0.05);
 
-    /* 그림자 */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.08);
-
-    /* 스페이싱 */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 20px;
     --spacing-xl: 24px;
 
-    /* 폰트 */
     --font-main: 'Inter', sans-serif;
     --font-mono: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
 
-    /* 테이블 관련 */
-    --table-header-bg: #f9fafb;
-    --table-cell-focus-bg: rgba(142, 85, 234, 0.05);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.08);
 
-    /* 기타 */
     --border-radius-sm: 6px;
     --border-radius-md: 8px;
     --border-radius-lg: 12px;

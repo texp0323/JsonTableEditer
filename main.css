@@ -19,4 +19,5 @@
 /* diff */
 @import url('css/diff-view.css');
 
-
+/* theme */
+@import url('css/theme.css');
