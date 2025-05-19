@@ -8,7 +8,7 @@ import { displayDataWithHandsontable as displayTableInHot, destroyHotInstance } 
 import * as historyManager from './historyManager.js';
 import * as searchController from './searchController.js';
 import * as templateManager from './templateManager.js';
-import './theme-switcher.js';
+import { initializeThemeSwitcher } from './theme-switcher.js';
 
 let currentJsonData = null;
 let originalJsonDataAtLoad = null;
@@ -211,6 +211,7 @@ function initialLoad() {
     } else {
         console.warn('3-패널 레이아웃에 필요한 요소를 모두 찾을 수 없습니다. 리사이저가 동작하지 않을 수 있습니다.');
     }
+    initializeThemeSwitcher();
 }
 
 

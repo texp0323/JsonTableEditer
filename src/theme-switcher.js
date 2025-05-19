@@ -1,62 +1,67 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const themeSwitcher = document.querySelector('.theme-switcher');
-    if (!themeSwitcher) {
-        return;
+const THEME_STORAGE_KEY = 'selected_theme_json_editor';
+
+const themes = [
+    {
+        buttonId: 'theme-btn-1',
+        themeClass: 'theme-high-contrast-dark',
+        name: 'High Contrast Dark',
+    },
+    {
+        buttonId: 'theme-btn-2',
+        themeClass: 'theme-classic-purple',
+        name: 'Classic Purple Light',
+    },
+    {
+        buttonId: 'theme-btn-3',
+        themeClass: 'theme-soft-mint',
+        name: 'Soft Mint',
+    }
+];
+
+const DEFAULT_THEME_CLASS = 'theme-classic-purple';
+
+let themeSwitcherElement = null;
+let themeButtonElements = null;
+let bodyElement = null;
+
+function applyTheme(themeClassToApply) {
+    if (!bodyElement) {
+        bodyElement = document.body;
     }
 
-    const themeButtons = themeSwitcher.querySelectorAll('.theme-button');
-    const body = document.body;
-    const THEME_STORAGE_KEY = 'selected_theme_json_editor';
-
-    const themes = [
-        {
-            buttonId: 'theme-btn-1',
-            themeClass: 'theme-high-contrast-dark',
-            name: 'High Contrast Dark',
-        },
-        {
-            buttonId: 'theme-btn-2',
-            themeClass: 'theme-classic-purple',
-            name: 'Classic Purple Light',
-        },
-        {
-            buttonId: 'theme-btn-3',
-            themeClass: 'theme-soft-mint',
-            name: 'Soft Mint',
+    themes.forEach(theme => {
+        if (bodyElement.classList.contains(theme.themeClass)) {
+            bodyElement.classList.remove(theme.themeClass);
         }
-    ];
+    });
 
-    const DEFAULT_THEME_CLASS = 'theme-classic-purple';
+    let effectiveThemeClass = DEFAULT_THEME_CLASS;
+    if (themeClassToApply && themes.some(t => t.themeClass === themeClassToApply)) {
+        effectiveThemeClass = themeClassToApply;
+    }
 
-    function applyTheme(themeClassToApply) {
-        themes.forEach(theme => {
-            if (body.classList.contains(theme.themeClass)) {
-                body.classList.remove(theme.themeClass);
-            }
-        });
+    bodyElement.classList.add(effectiveThemeClass);
+    localStorage.setItem(THEME_STORAGE_KEY, effectiveThemeClass);
+    updateActiveButton(effectiveThemeClass);
+}
 
-        let effectiveThemeClass = DEFAULT_THEME_CLASS;
-        if (themeClassToApply && themes.some(t => t.themeClass === themeClassToApply)) {
-            effectiveThemeClass = themeClassToApply;
+function updateActiveButton(activeThemeClass) {
+    if (!themeButtonElements) return;
+
+    themeButtonElements.forEach(button => {
+        const buttonTheme = themes.find(t => t.buttonId === button.id);
+        if (buttonTheme && buttonTheme.themeClass === activeThemeClass) {
+            button.classList.add('active-theme');
+        } else {
+            button.classList.remove('active-theme');
         }
+    });
+}
 
-        body.classList.add(effectiveThemeClass);
-        localStorage.setItem(THEME_STORAGE_KEY, effectiveThemeClass);
-        updateActiveButton(effectiveThemeClass);
-    }
+function setupEventListeners() {
+    if (!themeButtonElements) return;
 
-    function updateActiveButton(activeThemeClass) {
-        themeButtons.forEach(button => {
-            const buttonTheme = themes.find(t => t.buttonId === button.id);
-            if (buttonTheme && buttonTheme.themeClass === activeThemeClass) {
-                button.classList.add('active-theme');
-            } else {
-                button.classList.remove('active-theme');
-            }
-        });
-    }
-
-    themeButtons.forEach(button => {
+    themeButtonElements.forEach(button => {
         button.addEventListener('click', () => {
             const selectedTheme = themes.find(theme => theme.buttonId === button.id);
             if (selectedTheme) {
@@ -64,6 +69,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+}
+
+export function initializeThemeSwitcher() {
+    bodyElement = document.body;
+    themeSwitcherElement = document.querySelector('.theme-switcher');
+
+    if (!themeSwitcherElement) {
+        console.warn('Theme switcher element not found by theme-switcher.js during initialization.');
+        return;
+    }
+    themeButtonElements = themeSwitcherElement.querySelectorAll('.theme-button');
+
+    if (!themeButtonElements || themeButtonElements.length === 0) {
+        console.warn('Theme buttons not found by theme-switcher.js during initialization.');
+        return;
+    }
+
+    setupEventListeners();
 
     const savedThemeClass = localStorage.getItem(THEME_STORAGE_KEY);
     if (savedThemeClass !== null) {
@@ -71,4 +94,5 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         applyTheme(DEFAULT_THEME_CLASS);
     }
-});
+    console.log('Theme switcher initialized.');
+}
