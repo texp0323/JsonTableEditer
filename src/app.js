@@ -8,6 +8,7 @@ import { displayDataWithHandsontable as displayTableInHot, destroyHotInstance } 
 import * as historyManager from './historyManager.js';
 import * as searchController from './searchController.js';
 import * as templateManager from './templateManager.js';
+import './theme-switcher.js';
 
 let currentJsonData = null;
 let originalJsonDataAtLoad = null;
