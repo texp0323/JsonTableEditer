@@ -7,6 +7,7 @@ import { applyValueStyleToNode } from './treeViewStyleUtils.js';
 import { displayDataWithHandsontable as displayTableInHot, destroyHotInstance } from './tableViewHandsontable.js';
 import * as historyManager from './historyManager.js';
 import * as searchController from './searchController.js';
+import * as templateManager from './templateManager.js';
 
 let currentJsonData = null;
 let originalJsonDataAtLoad = null;
@@ -534,8 +535,23 @@ function handlePathSegmentClicked(path) {
 export function displayDataInTable(dataToDisplay, dataKeyNameToUse, rootJsonDataForContext, dataPathStringToRecord, options = { syncTreeView: true }) {
     historyManager.addStateToHistory({ dataPathString: dataPathStringToRecord, dataKeyName: dataKeyNameToUse });
     updateTableViewPathDisplay(dataPathStringToRecord, handlePathSegmentClicked);
-    const configForTable = { tableViewDomElement: tableViewContainer, updateJsonDataCallback: updateJsonData, updateJsonKeyCallback: updateJsonKey, refreshTreeViewCallback: refreshTreeView, getObjectByPathCallback: getObjectByPath, convertToTypedValueCallback: convertToTypedValue, rootJsonData: rootJsonDataForContext, currentJsonDataRef: () => currentJsonData, dataPathString: dataPathStringToRecord, displayTableCallback: displayDataInTable };
-    hotInstanceRefForPopups = displayTableInHot(dataToDisplay, dataKeyNameToUse, configForTable);
+    const configForTable = {
+        tableViewDomElement: tableViewContainer,
+        updateJsonDataCallback: updateJsonData,
+        updateJsonKeyCallback: updateJsonKey,
+        refreshTreeViewCallback: refreshTreeView,
+        getObjectByPathCallback: getObjectByPath,
+        convertToTypedValueCallback: convertToTypedValue,
+        rootJsonData: rootJsonDataForContext,
+        currentJsonDataRef: () => currentJsonData,
+        dataPathString: dataPathStringToRecord,
+        displayTableCallback: displayDataInTable,
+        // Add template manager functions to config
+        getTemplates: templateManager.getTemplates,
+        addTemplate: templateManager.addTemplate
+    };
+    hotInstanceRefForPopups = displayTableInHot(dataToDisplay, dataKeyNameToUse, configForTable); // displayDataWithHandsontable in your context
+
 
     if (options.syncTreeView && treeViewContainer && dataPathStringToRecord !== undefined && dataPathStringToRecord !== null) {
         const targetNodeElement = treeViewContainer.querySelector(`.tree-node[data-path="${dataPathStringToRecord}"]`);

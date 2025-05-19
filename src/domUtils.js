@@ -10,17 +10,22 @@ export const tableViewContainer = document.getElementById('table-view');
 
 /** 지정된 요소에 임시 메시지를 표시합니다. */
 export function showTemporaryMessage(element, message, duration) {
-    element.textContent = message;
-    setTimeout(() => { element.textContent = ''; }, duration);
+    if (element) { // 요소가 존재하는지 확인
+        element.textContent = message;
+        setTimeout(() => { element.textContent = ''; }, duration);
+    }
 }
 
 /** 테이블 뷰 상단에 현재 데이터 경로를 표시합니다. */
 export function updateTableViewPathDisplay(dataPathString, onPathSegmentClickCallback) {
     const headers = document.querySelectorAll('h2');
     let titleElement = null;
-    headers.forEach(h => { if (h.textContent.includes('데이터 테이블 뷰')) titleElement = h; });
+    headers.forEach(h => { if (h.textContent && h.textContent.includes('데이터 테이블 뷰')) titleElement = h; }); //
 
-    if (!titleElement) { /* ... error handling or create if not exists ... */ return; }
+    if (!titleElement) {
+        // console.warn('데이터 테이블 뷰 H2 제목 요소를 찾을 수 없습니다.'); // H2를 찾지 못한 경우를 위한 경고
+        return;
+    }
 
     let pathSpan = document.getElementById('table-view-current-path-display');
     if (!pathSpan) {
@@ -36,69 +41,62 @@ export function updateTableViewPathDisplay(dataPathString, onPathSegmentClickCal
     const prefixText = '(현재 경로: ';
     const suffixText = ')';
 
-    if (dataPathString === null || dataPathString === undefined) {
-        // pathSpan.textContent = ''; // No path to display
-        return;
-    }
-
     pathSpan.appendChild(document.createTextNode(prefixText));
 
-    if (dataPathString === '') {
-        if (onPathSegmentClickCallback) {
-            const link = document.createElement('a');
-            link.href = '#';
-            link.textContent = 'root';
-            link.style.textDecoration = 'underline';
-            link.style.cursor = 'pointer';
-            link.onclick = (e) => {
-                e.preventDefault();
-                onPathSegmentClickCallback('');
-            };
-            pathSpan.appendChild(link);
-        } else {
-            pathSpan.appendChild(document.createTextNode('root'));
-        }
+    // 항상 "root"를 먼저 표시하고 클릭 가능하게 만듭니다.
+    if (onPathSegmentClickCallback) {
+        const rootLink = document.createElement('a');
+        rootLink.href = '#';
+        rootLink.textContent = 'root';
+        rootLink.style.textDecoration = 'underline';
+        rootLink.style.cursor = 'pointer';
+        rootLink.onclick = (e) => {
+            e.preventDefault();
+            onPathSegmentClickCallback(''); // root 경로는 빈 문자열입니다.
+        };
+        pathSpan.appendChild(rootLink);
     } else {
-        // Split path carefully: "root.obj.arr[0].key" -> "root", "obj", "arr", "[0]", "key"
-        const segments = [];
-        let currentCumulativePath = "";
-        // This regex tries to capture parts between dots, or bracketed parts.
-        const pathSegmentRegex = /([^[.]+)|(\[[^\]]+\])/g;
+        pathSpan.appendChild(document.createTextNode('root'));
+    }
+
+    // dataPathString이 존재하고 비어있지 않다면, 이어서 경로 세그먼트들을 처리합니다.
+    if (dataPathString && dataPathString !== '') { //
+        let currentCumulativePathForSegments = ""; // dataPathString 시작부터의 누적 경로
+        // 정규식은 점으로 구분된 키 또는 대괄호로 묶인 인덱스를 찾습니다.
+        // 예: "obj.arr[0].key" -> "obj", "arr", "[0]", "key"
+        const pathSegmentRegex = /([^[.]+)|(\[[^\]]+\])/g; //
         let match;
-        let firstSegment = true;
 
-        while ((match = pathSegmentRegex.exec(dataPathString)) !== null) {
-            const segment = match[0];
-            let displaySegment = segment;
-            let pathToThisSegment;
+        while ((match = pathSegmentRegex.exec(dataPathString)) !== null) { //
+            const segment = match[0]; // 현재 세그먼트 (예: "obj", "arr", "[0]", "key")
+            let displaySegment = segment; // 화면에 표시될 세그먼트 이름
 
-            if (firstSegment) {
-                currentCumulativePath = segment;
-                firstSegment = false;
+            // 누적 경로 업데이트
+            if (currentCumulativePathForSegments === "") {
+                currentCumulativePathForSegments = segment;
             } else {
-                if (segment.startsWith('[')) { // Array index
-                    currentCumulativePath += segment;
-                } else { // Object key
-                    currentCumulativePath += '.' + segment;
-                    pathSpan.appendChild(document.createTextNode(' > ')); // Add dot separator
+                if (segment.startsWith('[')) { // 배열 인덱스인 경우 (예: "[0]") //
+                    currentCumulativePathForSegments += segment;
+                } else { // 객체 키인 경우 (예: "arr" 또는 "key") //
+                    currentCumulativePathForSegments += '.' + segment;
                 }
             }
-            pathToThisSegment = currentCumulativePath;
 
-            if (segment.startsWith('[') && segment.endsWith(']')) {
-                displaySegment = segment; // Keep brackets for display of index segment link itself
-            }
+            // 현재 세그먼트 앞에 구분자 " > " 추가
+            pathSpan.appendChild(document.createTextNode(' > ')); //
 
+            // 현재 세그먼트에 대한 링크 생성 및 추가
             if (onPathSegmentClickCallback) {
                 const link = document.createElement('a');
                 link.href = '#';
                 link.textContent = displaySegment;
                 link.style.textDecoration = 'underline';
                 link.style.cursor = 'pointer';
-                link.onclick = (e) => {
+                // 클로저를 사용하여 각 링크가 올바른 경로를 가지도록 합니다.
+                link.onclick = ((pathForCallback) => (e) => {
                     e.preventDefault();
-                    onPathSegmentClickCallback(pathToThisSegment);
-                };
+                    onPathSegmentClickCallback(pathForCallback);
+                })(currentCumulativePathForSegments);
                 pathSpan.appendChild(link);
             } else {
                 pathSpan.appendChild(document.createTextNode(displaySegment));
@@ -109,10 +107,10 @@ export function updateTableViewPathDisplay(dataPathString, onPathSegmentClickCal
 }
 
 /** 모든 UI 요소를 초기 상태로 리셋합니다 (트리, 테이블, 메시지 등). */
-export function resetBaseUI() { // hotInstance 파괴는 tableView 모듈에서 하거나 app.js에서 직접 처리
-    treeViewContainer.innerHTML = '';
-    tableViewContainer.innerHTML = ''; // Handsontable 컨테이너도 비움
-    if (errorOutput) errorOutput.textContent = '';
-    if (saveFeedback) saveFeedback.textContent = '';
-    updateTableViewPathDisplay(null);
+export function resetBaseUI() {
+    if (treeViewContainer) treeViewContainer.innerHTML = ''; //
+    if (tableViewContainer) tableViewContainer.innerHTML = ''; // Handsontable 컨테이너도 비움 //
+    if (errorOutput) errorOutput.textContent = ''; //
+    if (saveFeedback) saveFeedback.textContent = ''; //
+    updateTableViewPathDisplay(null, null); // 경로 표시도 초기화 (콜백 없이)
 }

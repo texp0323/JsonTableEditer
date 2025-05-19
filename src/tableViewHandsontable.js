@@ -1,6 +1,14 @@
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
 import { showTextInputPopup, showConfirmationPopup } from './customPopup.js'; // customPopup.js 의존성
+import Swal from 'sweetalert2'; // Import Swal for the select popup
+
+const TEMPLATES = {
+    emptyObject: { name: "빈 객체 (Empty Object)", type: "object", value: {} },
+    sampleUserObject: { name: "샘플 사용자 객체 (Sample User Object)", type: "object", value: { "username": "guest", "id": 100, "isActive": true, "roles": ["user"] } },
+    emptyArray: { name: "빈 배열 (Empty Array)", type: "array", value: [] },
+    sampleItemsArray: { name: "샘플 아이템 배열 (Sample Items Array)", type: "array", value: ["itemA", "itemB", 123, { "subItem": null }] }
+};
 
 let hotInstance = null; // 현재 Handsontable 인스턴스를 저장하는 변수
 let cellMetaMap = new Map(); // 셀 메타 정보를 저장하는 맵
@@ -195,6 +203,79 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
         manualRowResize: true,
         contextMenu: {
             items: {
+                "view_key_content": {
+                    name: '내용 보기 (View Content)',
+                    hidden: function() {
+                        // ... (이전 답변에서 수정된 hidden 로직은 그대로 사용) ...
+                        const hotMenu = this;
+                        const selection = hotMenu.getSelectedRangeLast();
+                        if (!selection) return true;
+
+                        const { from } = selection; // hidden에서는 이 방식이 동작할 수 있으나, callback에서는 selection[0].start가 더 안전합니다.
+                        // 여기서는 getSelectedRangeLast()의 반환값에 따라 달라질 수 있습니다.
+                        // 일관성을 위해 callback과 동일한 방식으로 접근하는 것이 좋을 수 있습니다.
+                        // 하지만 주로 start, end를 가진 객체를 배열로 반환하는 getSelectedRange()와 달리
+                        // getSelectedRangeLast()는 단일 범위 객체를 반환할 수 있어 from/to를 직접 가질 수 있습니다.
+                        // 만약 hidden은 문제가 없다면 그대로 두셔도 됩니다. callback이 더 중요합니다.
+                        const r = from.row;
+                        const c = from.col;
+
+                        if (c !== 0) return true;
+                        if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+                            return true;
+                        }
+                        const objectKeys = Object.keys(data);
+                        if (r >= objectKeys.length) {
+                            return true;
+                        }
+                        const keyName = objectKeys[r];
+                        const value = data[keyName];
+                        if (typeof value !== 'object' || value === null) {
+                            return true;
+                        }
+                        return false;
+                    },
+                    callback: function(_key, selection) { // selection은 선택된 범위(들)의 배열입니다.
+                        const hotMenu = this;
+
+                        // selection 객체 및 그 내부 구조에 대한 방어 코드 추가
+                        if (!selection || selection.length === 0 || !selection[0] || !selection[0].start) {
+                            console.error('View Content callback: 유효하지 않은 selection 객체입니다.', selection);
+                            return;
+                        }
+
+                        const startCell = selection[0].start; // 첫 번째 선택 범위의 시작 셀 정보
+                        const r = startCell.row; // 여기서 row 값을 가져옵니다.
+                        // const c = startCell.col; // 열 값, hidden 로직에 의해 c는 0으로 간주됨
+
+                        const objectKeys = Object.keys(data);
+                        // r이 objectKeys의 유효한 인덱스인지 한 번 더 확인 (hidden에서 했지만 방어적으로)
+                        if (r >= objectKeys.length) {
+                            console.error('View Content callback: 행 인덱스가 범위를 벗어났습니다.', r, objectKeys);
+                            return;
+                        }
+                        const keyName = objectKeys[r];
+                        const valueToDisplay = data[keyName];
+
+                        // valueToDisplay가 객체나 배열인지 다시 한번 확인 (hidden에서 했지만 방어적으로)
+                        if (typeof valueToDisplay !== 'object' || valueToDisplay === null) {
+                            console.error('View Content callback: 대상 값이 객체나 배열이 아닙니다.', valueToDisplay);
+                            // 사용자에게 알림을 보여줄 수도 있습니다.
+                            showConfirmationPopup({ title: '오류', text: '내용을 볼 수 있는 대상(객체/배열)이 아닙니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
+                            return;
+                        }
+
+                        const basePath = config.dataPathString || "";
+                        const drillPath = basePath ? `${basePath}.${keyName}` : keyName;
+
+                        config.displayTableCallback(
+                            valueToDisplay,
+                            keyName,
+                            config.rootJsonData,
+                            drillPath
+                        );
+                    }
+                },
                 "row_above": { name: '위에 행 삽입' },
                 "row_below": { name: '아래에 행 삽입' },
                 "col_left": { name: '왼쪽에 열 삽입' },
@@ -319,20 +400,19 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         }
                     }
                 },
-                "make_array":{
-                    name:'값을 빈 배열 [] 로 변경',
+                "set_template": { // Update this item
+                    name: '템플릿 설정',
                     hidden: function() {
-                        const hot = this;
-                        const selection = hot.getSelectedRangeLast();
+                        // ... (hidden logic remains largely the same, ensuring it's a modifiable value cell) ...
+                        const hotMenu = this;
+                        const selection = hotMenu.getSelectedRangeLast();
                         if (!selection) return true;
                         const { from } = selection;
                         const r = from.row;
                         const c = from.col;
-
                         const currentCellMeta = cellMetaMap.get(`${r}-${c}`);
                         if (currentCellMeta && currentCellMeta.isPadding) return true;
-
-                        const colHeadersArray = hot.getColHeader();
+                        const colHeadersArray = hotMenu.getColHeader();
                         const structureInfo = {
                             sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
                             isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
@@ -341,99 +421,154 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         const path = getPathForHotChange(r, c, structureInfo);
                         return path === null;
                     },
-                    callback: function(_key, selection) {
-                        const hot = this;
-                        const cellCoords = selection[0].start ? selection[0].start : selection[0].from; // Handsontable 버전에 따른 selection 구조 차이 핸들링
-                        const r = cellCoords.row;
-                        const c = cellCoords.col;
-
-                        const colHeadersArray = hot.getColHeader();
-                        const structureInfo = {
-                            sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
-                            isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
-                            cellMetaMap: cellMetaMap
-                        };
-                        const pathToUpdate = getPathForHotChange(r, c, structureInfo);
-
-                        if (pathToUpdate !== null) {
-                            config.updateJsonDataCallback(pathToUpdate, '[]', false);
-
-                            let updatedViewData = data; // 기본적으로 현재 data 슬라이스 사용 (참조에 의해 변경되었을 것으로 가정)
-                            // dataPathString을 통해 루트 데이터로부터 현재 뷰 데이터를 다시 가져와 일관성 확보
-                            if (config.dataPathString) {
-                                const rootJson = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
-                                updatedViewData = config.getObjectByPathCallback(rootJson, config.dataPathString);
-                            } else { // 현재 뷰가 루트 데이터 그 자체인 경우
-                                updatedViewData = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
-                            }
-                            // updatedViewData가 undefined일 수 있는 경우 방어 코드 (getObjectByPathCallback이 undefined 반환 시)
-                            if (updatedViewData === undefined) updatedViewData = (pathToUpdate.includes('[') || pathToUpdate.includes('.')) ? {} : null;
-
-
-                            const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(updatedViewData, dataKeyName, config);
-                            cellMetaMap = newMap;
-                            hot.updateSettings({ colHeaders: preparedColHeaders });
-                            hot.loadData(preparedHotData);
-                        } else {
-                            showConfirmationPopup({ title: '오류', text: '값을 빈 배열로 변경할 수 없는 셀입니다.', icon: 'error', showCancelButton: false, hotInstance: hot });
-                        }
-                    }
-                },
-                "make_object":{
-                    name:'값을 빈 객체 {} 로 변경',
-                    hidden: function() { // make_array와 동일한 hidden 로직
-                        const hot = this;
-                        const selection = hot.getSelectedRangeLast();
-                        if (!selection) return true;
-                        const { from } = selection;
-                        const r = from.row;
-                        const c = from.col;
-
-                        const currentCellMeta = cellMetaMap.get(`${r}-${c}`);
-                        if (currentCellMeta && currentCellMeta.isPadding) return true;
-
-                        const colHeadersArray = hot.getColHeader();
-                        const structureInfo = {
-                            sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
-                            isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
-                            cellMetaMap: cellMetaMap
-                        };
-                        const path = getPathForHotChange(r, c, structureInfo);
-                        return path === null;
-                    },
-                    callback:function(_key, selection){ // make_array와 유사한 callback 로직
-                        const hot = this;
+                    callback: async function(_key, selection) {
+                        const hotMenu = this;
                         const cellCoords = selection[0].start ? selection[0].start : selection[0].from;
                         const r = cellCoords.row;
                         const c = cellCoords.col;
 
-                        const colHeadersArray = hot.getColHeader();
+                        if (hotMenu && typeof hotMenu.deselectCell === 'function') {
+                            hotMenu.deselectCell();
+                        }
+
+                        const currentAvailableTemplates = config.getTemplates(); // Get dynamic templates
+                        if (!currentAvailableTemplates || currentAvailableTemplates.length === 0) {
+                            showConfirmationPopup({ title: '알림', text: '사용 가능한 템플릿이 없습니다. 먼저 템플릿을 추가해주세요.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
+                            return;
+                        }
+
+                        const templateOptions = {};
+                        currentAvailableTemplates.forEach((template, index) => {
+                            templateOptions[`tpl_idx_${index}`] = template.name; // Use a unique key for Swal
+                        });
+
+                        const { value: selectedTemplateKey } = await Swal.fire({
+                            title: '템플릿 선택 (Select Template)',
+                            input: 'select',
+                            inputOptions: templateOptions,
+                            inputPlaceholder: '적용할 템플릿을 선택하세요',
+                            showCancelButton: true,
+                            confirmButtonText: '적용 (Apply)',
+                            cancelButtonText: '취소 (Cancel)',
+                            customClass: { popup: 'custom-swal-popup' }
+                        });
+
+                        if (selectedTemplateKey) {
+                            const templateIndex = parseInt(selectedTemplateKey.replace('tpl_idx_', ''), 10);
+                            const selectedTemplateObject = currentAvailableTemplates[templateIndex].value;
+                            const stringifiedTemplate = JSON.stringify(selectedTemplateObject);
+
+                            // ... (rest of the logic to get pathToUpdate and call updateJsonDataCallback, then refresh table)
+                            const colHeadersArray = hotMenu.getColHeader();
+                            const structureInfo = {
+                                sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
+                                isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
+                                cellMetaMap: cellMetaMap
+                            };
+                            const pathToUpdate = getPathForHotChange(r, c, structureInfo);
+
+                            if (pathToUpdate !== null) {
+                                config.updateJsonDataCallback(pathToUpdate, stringifiedTemplate, false);
+                                let updatedViewData = data;
+                                const rootJsonContext = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
+                                if (config.dataPathString) {
+                                    updatedViewData = config.getObjectByPathCallback(rootJsonContext, config.dataPathString);
+                                } else {
+                                    updatedViewData = rootJsonContext;
+                                }
+                                if (updatedViewData === undefined) {
+                                    updatedViewData = (pathToUpdate.includes('[') || pathToUpdate.includes('.')) ? {} : null;
+                                }
+                                const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(updatedViewData, dataKeyName, config);
+                                cellMetaMap = newMap;
+                                hotMenu.updateSettings({ colHeaders: preparedColHeaders });
+                                hotMenu.loadData(preparedHotData);
+                            } else {
+                                showConfirmationPopup({ title: '오류', text: '템플릿을 적용할 수 없는 셀입니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
+                            }
+                        }
+                    }
+                }, // End of set_template
+                "add_as_template": { // New context menu item
+                    name: '템플릿으로 추가',
+                    hidden: function() {
+                        const hotMenu = this;
+                        const selection = hotMenu.getSelectedRangeLast();
+                        if (!selection) return true;
+                        const { from } = selection;
+                        const r = from.row;
+                        const c = from.col;
+
+                        const colHeadersArray = hotMenu.getColHeader();
                         const structureInfo = {
                             sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
                             isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
                             cellMetaMap: cellMetaMap
                         };
-                        const pathToUpdate = getPathForHotChange(r, c, structureInfo);
+                        const path = getPathForHotChange(r, c, structureInfo);
+                        if (path === null) return true; // Not a modifiable value cell
 
-                        if (pathToUpdate !== null) {
-                            config.updateJsonDataCallback(pathToUpdate, '{}', false);
+                        const rootJsonContext = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
+                        const cellValue = config.getObjectByPathCallback(rootJsonContext, path);
 
-                            let updatedViewData = data;
-                            if (config.dataPathString) {
-                                const rootJson = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
-                                updatedViewData = config.getObjectByPathCallback(rootJson, config.dataPathString);
+                        // Show only if the value is an object or array
+                        return !(typeof cellValue === 'object' && cellValue !== null);
+                    },
+                    callback: async function(_key, selection) {
+                        const hotMenu = this;
+                        const cellCoords = selection[0].start ? selection[0].start : selection[0].from;
+                        const r = cellCoords.row;
+                        const c = cellCoords.col;
+
+                        const colHeadersArray = hotMenu.getColHeader();
+                        const structureInfo = {
+                            sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
+                            isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
+                            cellMetaMap: cellMetaMap
+                        };
+                        const path = getPathForHotChange(r, c, structureInfo);
+                        if (path === null) return; // Should be caught by hidden logic
+
+                        const rootJsonContext = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
+                        const cellValue = config.getObjectByPathCallback(rootJsonContext, path);
+
+                        if (!(typeof cellValue === 'object' && cellValue !== null)) {
+                            showConfirmationPopup({ title: '알림', text: '객체 또는 배열 형식의 값만 템플릿으로 추가할 수 있습니다.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
+                            return;
+                        }
+
+                        if (hotMenu && typeof hotMenu.deselectCell === 'function') {
+                            hotMenu.deselectCell();
+                        }
+
+                        const { value: templateName } = await showTextInputPopup({
+                            title: '새 템플릿 이름 입력',
+                            inputLabel: '저장할 템플릿의 이름을 입력하세요:',
+                            inputValue: '', // You could suggest a name based on the key if available
+                            confirmButtonText: '추가',
+                            inputValidator: (value) => {
+                                const trimmedVal = value.trim();
+                                if (!trimmedVal) return '템플릿 이름은 비워둘 수 없습니다.';
+                                const existingTemplates = config.getTemplates();
+                                if (existingTemplates.some(t => t.name === trimmedVal)) {
+                                    return '이미 사용중인 템플릿 이름입니다.';
+                                }
+                                return null;
+                            },
+                            hotInstance: hotMenu
+                        });
+
+                        if (templateName && templateName.trim()) {
+                            const type = Array.isArray(cellValue) ? "array" : "object";
+                            const addResult = config.addTemplate(templateName.trim(), type, cellValue);
+
+                            if (addResult === true) {
+                                showConfirmationPopup({ title: '성공', text: `템플릿 "${templateName.trim()}"이(가) 추가되었습니다.`, icon: 'success', showCancelButton: false, hotInstance: hotMenu });
+                            } else if (addResult === 'duplicate_name') {
+                                showConfirmationPopup({ title: '오류', text: `템플릿 이름 "${templateName.trim()}"이(가) 이미 존재합니다. 다른 이름을 사용해주세요.`, icon: 'error', showCancelButton: false, hotInstance: hotMenu });
                             } else {
-                                updatedViewData = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
+                                showConfirmationPopup({ title: '오류', text: '템플릿 추가에 실패했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
                             }
-                            if (updatedViewData === undefined) updatedViewData = (pathToUpdate.includes('[') || pathToUpdate.includes('.')) ? {} : null;
-
-
-                            const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(updatedViewData, dataKeyName, config);
-                            cellMetaMap = newMap;
-                            hot.updateSettings({ colHeaders: preparedColHeaders });
-                            hot.loadData(preparedHotData);
-                        } else {
-                            showConfirmationPopup({ title: '오류', text: '값을 빈 객체로 변경할 수 없는 셀입니다.', icon: 'error', showCancelButton: false, hotInstance: hot });
                         }
                     }
                 },
@@ -695,7 +830,7 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                 return; // 비동기이므로 여기서 함수 종료
             } else if (typeof currentViewData === 'object' && currentViewData !== null && !Array.isArray(currentViewData)) {
                 // 단순 객체 뷰에서 열 추가는 행 추가와 유사하게 처리 (새 키-값 쌍 추가)
-                showConfirmationPopup({ title: '알림', html: '이 뷰에서는 "열 추가"가 "새 키-값 쌍 추가"(행 추가와 유사)로 동작합니다.<br>행 추가 기능을 사용해주세요.', icon: 'info', showCancelButton: false, hotInstance: hot })
+                showConfirmationPopup({ title: '오류', text: '현재 데이터 구조에는 열을 추가할 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: hot })
                     .then(() => { // 알림 후 현재 상태로 테이블 리프레시
                         const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
                         cellMetaMap = newMap;
@@ -761,7 +896,7 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                 });
             } else if (typeof currentViewData === 'object' && currentViewData !== null && !Array.isArray(currentViewData)) {
                 // 단순 객체 뷰에서는 열 부분 삭제 불가 (행 전체 삭제로 유도)
-                showConfirmationPopup({ title: '알림', text: '이 뷰에서 특정 열 부분 삭제는 지원되지 않습니다. 행 전체를 삭제해주세요.', icon: 'info', showCancelButton: false, hotInstance: this });
+                showConfirmationPopup({ title: '오류', text: '이 뷰에서 특정 열 부분 삭제는 지원되지 않습니다.', icon: 'error', showCancelButton: false, hotInstance: this });
                 return false;
             } else { // 그 외 (원시값 배열 등)
                 showConfirmationPopup({ title: '오류', text: '현재 데이터 구조에서는 열을 삭제할 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: this });
