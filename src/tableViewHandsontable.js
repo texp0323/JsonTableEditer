@@ -206,17 +206,11 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                 "view_key_content": {
                     name: '내용 보기 (View Content)',
                     hidden: function() {
-                        // ... (이전 답변에서 수정된 hidden 로직은 그대로 사용) ...
                         const hotMenu = this;
                         const selection = hotMenu.getSelectedRangeLast();
                         if (!selection) return true;
 
-                        const { from } = selection; // hidden에서는 이 방식이 동작할 수 있으나, callback에서는 selection[0].start가 더 안전합니다.
-                        // 여기서는 getSelectedRangeLast()의 반환값에 따라 달라질 수 있습니다.
-                        // 일관성을 위해 callback과 동일한 방식으로 접근하는 것이 좋을 수 있습니다.
-                        // 하지만 주로 start, end를 가진 객체를 배열로 반환하는 getSelectedRange()와 달리
-                        // getSelectedRangeLast()는 단일 범위 객체를 반환할 수 있어 from/to를 직접 가질 수 있습니다.
-                        // 만약 hidden은 문제가 없다면 그대로 두셔도 됩니다. callback이 더 중요합니다.
+                        const { from } = selection;
                         const r = from.row;
                         const c = from.col;
 

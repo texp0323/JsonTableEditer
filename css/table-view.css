@@ -1,4 +1,4 @@
-/* 테이블 뷰 관련 스타일 */
+/* table-view.css */
 
 #table-view {
     width: 100%;
@@ -7,18 +7,48 @@
 }
 
 .handsontable {
-    font-size: 13px;
+    font-size: 13px; /* Consider making this a variable if themes need different font sizes */
     box-sizing: border-box;
+    background-color: var(--table-bg); /* Use variable */
+}
+
+/* 테이블 헤더 스타일 */
+.handsontable th {
+    background-color: var(--table-header-bg) !important; /* Use variable */
+    color: var(--table-header-text) !important; /* Use variable */
+    border-color: var(--table-border-color) !important; /* Use variable */
+}
+
+/* 테이블 셀 스타일 */
+.handsontable td {
+    background-color: var(--table-cell-bg) !important; /* Use variable */
+    color: var(--table-cell-text) !important; /* Use variable */
+    border-color: var(--table-border-color) !important; /* Use variable */
+}
+
+/* 짝수/홀수 행의 구분을 위한 스트라이프 효과 */
+.handsontable tr:nth-child(even) td {
+    background-color: var(--table-cell-stripe-bg) !important; /* Use variable */
+}
+
+.handsontable tr:nth-child(odd) td {
+    background-color: var(--table-cell-bg) !important; /* Use base cell background for odd rows */
+}
+
+/* 선택된 셀 강조 스타일 */
+.handsontable .current,
+.handsontable .area {
+    background-color: var(--table-selected-cell-bg) !important; /* Use variable */
+    /* You might also want a specific text color for selected cells if needed */
+    /* color: var(--table-selected-cell-text) !important; */
 }
 
 .handsontable th,
 .handsontable td {
-    padding: 8px 10px !important; /* 상하 8px, 좌우 10px (이전보다 약간 늘림) */
-    line-height: 1.4em !important; /* 폰트 크기에 비례한 줄 높이, 또는 고정 px 값 (예: 20px) */
-    vertical-align: middle !important; /* 내용을 셀의 수직 중앙에 정렬 */
-    box-sizing: border-box !important; /* 패딩과 테두리를 포함하여 크기 계산 */
-    font-family: var(--font-main);
-    font-size: 18px;
+    padding: 8px 10px !important;
+    line-height: 1.4em !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+    font-family: var(--font-main); /* Assuming --font-main is defined in your :root or body themes */
+    font-size: 18px; /* Or var(--table-font-size) if you want to make it themeable */
 }
-
-
