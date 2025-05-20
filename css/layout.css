@@ -31,7 +31,7 @@ body {
     letter-spacing: -0.01em;
 }
 
-.template-buttons button {
+.top-buttons button {
     margin-bottom: 8px;
     padding: 6px 14px;         /* 좌우 넉넉하게 */
     background-color: var(--button-bg);

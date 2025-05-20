@@ -68,7 +68,7 @@ function initialLoad() {
                 return;
             }
             const dataForDiffRight = currentJsonData === null ? {} : currentJsonData;
-            showJsonDiffPopup({
+            showJsonDiffPopup({ //
                 title: 'JSON 데이터 변경사항',
                 jsonDiffData: { left: originalJsonDataAtLoad, right: dataForDiffRight },
                 buttons: [{ text: '닫기', role: 'confirm' }],
@@ -89,6 +89,19 @@ function initialLoad() {
         saveToFileButton.addEventListener("click", saveJsonToFile);
     }
 
+    // Add this for the new CSV button
+    const saveToCSVButton = document.getElementById("saveToCSV"); //
+    if (saveToCSVButton) {
+        saveToCSVButton.addEventListener("click", saveJsonToCSV);
+    }
+    // Add event listener for the new "Load CSV" button
+    const loadFromCSVButton = document.getElementById("loadFromCSV");
+    if (loadFromCSVButton) {
+        loadFromCSVButton.addEventListener("click", loadCsvFromFile);
+    }
+
+    // End of CSV button addition
+
     const loadTemplatesFromFileBtn = document.getElementById("loadTemplatesFromFileBtn");
     if (loadTemplatesFromFileBtn) {
         loadTemplatesFromFileBtn.addEventListener("click", loadTemplatesFromFile);
@@ -99,9 +112,10 @@ function initialLoad() {
         saveTemplatesToFileBtn.addEventListener("click", saveTemplatesToFile);
     }
 
-    searchInput = document.getElementById('searchInput');
-    searchTargetSelect = document.getElementById('searchTargetSelect');
-    searchResultsDropdown = document.getElementById('searchResultsDropdown');
+    // ... (rest of the existing initialLoad function)
+    searchInput = document.getElementById('searchInput'); //
+    searchTargetSelect = document.getElementById('searchTargetSelect'); //
+    searchResultsDropdown = document.getElementById('searchResultsDropdown'); //
 
     if (searchInput) {
         searchInput.addEventListener('input', handleSearchInput);
@@ -119,20 +133,20 @@ function initialLoad() {
     }
 
     window.addEventListener('mousedown', (event) => {
-        if (event.button === 3 || event.button === 4) {
+        if (event.button === 3 || event.button === 4) { // Mouse back/forward buttons
             event.preventDefault();
-            if (event.button === 3) {
+            if (event.button === 3) { // Back button
                 navigateHistory('back');
-            } else if (event.button === 4) {
+            } else if (event.button === 4) { // Forward button
                 navigateHistory('forward');
             }
         }
     });
-    window.addEventListener('contextmenu', (event) => {
+    window.addEventListener('contextmenu', (event) => { // Prevent default context menu
         event.preventDefault();
     });
 
-    const jsonControlPanel = document.querySelector('.json-control-panel');
+    const jsonControlPanel = document.querySelector('.json-control-panel'); //
     if (jsonControlPanel) {
         jsonControlPanel.addEventListener('dragover', handleDragOver);
         jsonControlPanel.addEventListener('dragleave', handleDragLeave);
@@ -141,15 +155,15 @@ function initialLoad() {
         console.warn('.json-control-panel 요소를 찾을 수 없어 드래그앤드롭 기능을 활성화할 수 없습니다.');
     }
 
-    const panelContainer = document.querySelector('.main-layout-triple-panel');
+    const panelContainer = document.querySelector('.main-layout-triple-panel'); //
     const panels = [
-        document.querySelector('.json-control-panel'),
-        document.querySelector('.tree-view-panel'),
-        document.querySelector('.table-view-panel')
+        document.querySelector('.json-control-panel'), //
+        document.querySelector('.tree-view-panel'), //
+        document.querySelector('.table-view-panel') //
     ];
     const resizers = [
-        document.getElementById('resizer-1'),
-        document.getElementById('resizer-2')
+        document.getElementById('resizer-1'), //
+        document.getElementById('resizer-2') //
     ];
 
     if (panelContainer && panels.every(p => p) && resizers.every(r => r)) {
@@ -198,7 +212,7 @@ function initialLoad() {
     } else {
         console.warn('3-패널 레이아웃에 필요한 요소를 모두 찾을 수 없습니다. 리사이저가 동작하지 않을 수 있습니다.');
     }
-    initializeThemeSwitcher();
+    initializeThemeSwitcher(); //
 }
 
 function handleDragOver(event) {
@@ -288,6 +302,385 @@ function handleSearchResultClick(params) {
     if (params && typeof displayDataInTable === 'function') {
         displayDataInTable(params.data, params.dataKeyName, params.rootJsonData, params.dataPathString || '');
         if (searchResultsDropdown) searchResultsDropdown.style.display = 'none';
+    }
+}
+
+function parseCsvLine(line) {
+    const values = [];
+    let currentVal = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                // Escaped quote ("")
+                currentVal += '"';
+                i++; // Skip next quote
+            } else {
+                inQuotes = !inQuotes; // Toggle inQuotes state
+            }
+        } else if (char === ',' && !inQuotes) {
+            values.push(currentVal); // No trim here, autoTypeConvert will trim
+            currentVal = "";
+        } else {
+            currentVal += char;
+        }
+    }
+    values.push(currentVal); // Add the last value
+    return values;
+}
+
+// Helper for basic automatic type conversion from CSV string values
+function autoTypeConvert(value) {
+    if (typeof value !== 'string') return value;
+
+    const trimmedValue = value.trim();
+
+    // 불리언 및 null 변환 (convertToTypedValue 우선순위 및 CSV의 빈 문자열 처리 방식 적용)
+    if (trimmedValue.toLowerCase() === 'null') return null;
+    if (trimmedValue.toLowerCase() === 'true') return true;
+    if (trimmedValue.toLowerCase() === 'false') return false;
+    if (trimmedValue === "") return null; // CSV 특화: 빈 문자열은 null로 처리
+
+    // 숫자 변환 (dataUtils.js의 convertToTypedValue 숫자 변환 로직 차용)
+    // 이 로직은 "1e3"과 같은 문자열은 숫자로 직접 변환하지 않고 문자열로 유지합니다.
+    // 이는 convertToTypedValue의 동작과 일치합니다.
+    if (trimmedValue !== '' && !isNaN(Number(trimmedValue))) {
+        if (trimmedValue.includes('.') ||
+            /^-?\d+$/.test(trimmedValue) || // "123", "-123", "007"과 같은 정수형 문자열 일치
+            String(Number(trimmedValue)) === trimmedValue.replace(/^0+(?=\d)/, '')) { // "01"을 1로 변환 후 문자열 비교
+            return Number(trimmedValue);
+        }
+    }
+
+    // JSON 배열/객체 형태의 문자열 변환 (dataUtils.js의 convertToTypedValue 로직 차용)
+    // CSV 필드가 "[1,2]" 또는 "{\"key\":\"val\"}" 같은 JSON 문자열을 포함하는 경우 파싱합니다.
+    if ((trimmedValue.startsWith('[') && trimmedValue.endsWith(']')) || (trimmedValue.startsWith('{') && trimmedValue.endsWith('}'))) {
+        try {
+            // JSON 문자열을 실제 배열/객체로 파싱
+            return JSON.parse(trimmedValue);
+        } catch (e) {
+            // JSON.parse 실패 시, 유효한 JSON 문자열이 아님.
+            // CSV 자동 변환 맥락에서는 이를 리터럴 문자열로 처리.
+            return trimmedValue;
+        }
+    }
+
+    // 위의 어떤 경우에도 해당하지 않으면 원본 문자열(trim된 상태) 그대로 반환
+    return trimmedValue;
+}
+
+// Function to convert CSV string to JSON (array of objects)
+function convertCsvToJson(csvString) {
+    const allLines = csvString.trim().split(/\r\n|\n|\r/);
+    if (allLines.length === 0) return []; // 빈 CSV는 빈 배열 반환
+
+    let headerLineIndex = -1;
+    for (let i = 0; i < allLines.length; i++) {
+        if (allLines[i].trim() !== "") {
+            headerLineIndex = i;
+            break;
+        }
+    }
+
+    if (headerLineIndex === -1) return []; // 헤더를 찾을 수 없으면 빈 배열 반환
+
+    let headers = parseCsvLine(allLines[headerLineIndex]).map((h, index) => {
+        const trimmedHeader = h.trim();
+        // 빈 헤더에 대한 기본 이름 생성은 여기서 유지하거나, 키-값 모드에서는 다르게 처리 가능
+        return trimmedHeader === "" ? `column_${index + 1}` : trimmedHeader;
+    });
+
+    // --- 키-값 쌍 CSV 감지 로직 추가 ---
+    const trimmedLowerHeaders = headers.map(h => h.toLowerCase());
+    const keyColumnNames = ['key', 'property', 'name', 'field', 'item']; // 키로 인식할 헤더 이름들
+    const valueColumnName = 'value'; // 값으로 인식할 헤더 이름
+
+    const isKeyValueCsv = headers.length === 2 &&
+        keyColumnNames.includes(trimmedLowerHeaders[0]) &&
+        trimmedLowerHeaders[1] === valueColumnName;
+
+    if (isKeyValueCsv) {
+        // 키-값 쌍 CSV로 판단되면, 단일 객체로 통합
+        const singleJsonObject = {};
+        for (let i = headerLineIndex + 1; i < allLines.length; i++) {
+            const currentLine = allLines[i];
+            if (currentLine.trim() === "") continue;
+
+            const values = parseCsvLine(currentLine);
+            if (values.every(v => v.trim() === "")) continue;
+
+            if (values.length >= 2) {
+                const key = values[0].trim(); // 첫 번째 열을 키로 사용
+                if (key === "") continue; // 키가 비어있으면 해당 행 무시
+                const rawValue = values[1];   // 두 번째 열을 값으로 사용
+                singleJsonObject[key] = autoTypeConvert(rawValue);
+            }
+        }
+        return singleJsonObject; // 단일 객체 반환
+    } else {
+        // 일반 테이블 형식 CSV 처리 (기존 로직)
+        const jsonData = [];
+        for (let i = headerLineIndex + 1; i < allLines.length; i++) {
+            const currentLine = allLines[i];
+            if (currentLine.trim() === "") continue;
+
+            const values = parseCsvLine(currentLine);
+            if (values.every(v => v.trim() === "")) continue;
+
+            const entry = {};
+            let rowHasMeaningfulData = false;
+            const maxIteration = Math.max(headers.length, values.length);
+
+            for (let j = 0; j < maxIteration; j++) {
+                const key = (j < headers.length && headers[j]) ? headers[j] : `column_${j + 1}`;
+                const rawValue = values[j] !== undefined ? values[j] : "";
+                const typedValue = autoTypeConvert(rawValue);
+                entry[key] = typedValue;
+                if (typedValue !== null && String(typedValue).trim() !== "") {
+                    rowHasMeaningfulData = true;
+                }
+            }
+            if (rowHasMeaningfulData) {
+                jsonData.push(entry);
+            }
+        }
+        return jsonData; // 객체의 배열 반환
+    }
+}
+
+async function loadCsvFromFile() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.csv,text/csv';
+    fileInput.style.display = 'none';
+
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const csvContent = e.target.result;
+                // convertCsvToJson은 이제 단일 객체 또는 객체의 배열을 반환할 수 있습니다.
+                const conversionResult = convertCsvToJson(csvContent);
+
+                let finalJsonDataToLoad;
+                let feedbackMessage = `${file.name} CSV 파일이 성공적으로 JSON으로 변환 및 로드되었습니다.`;
+
+                if (Array.isArray(conversionResult)) {
+                    // convertCsvToJson이 배열을 반환한 경우 (일반 테이블 CSV)
+                    // 사용자 요청("유일할 때가 아니라 그냥 벗겨줘" -> "배열이 비어있지 않으면 첫 번째 요소만 취한다")을 따름
+                    if (conversionResult.length > 0) {
+                        finalJsonDataToLoad = conversionResult[0];
+                        if (conversionResult.length > 1) {
+                            console.warn("CSV contained multiple records; only the first record has been loaded into the editor. Subsequent records were ignored.");
+                            feedbackMessage = `${file.name} CSV 로드됨 (주의: 여러 레코드 중 첫 번째 레코드만 표시됨).`;
+                        }
+                    } else {
+                        // 빈 CSV는 빈 배열로 처리
+                        finalJsonDataToLoad = [];
+                    }
+                } else if (typeof conversionResult === 'object' && conversionResult !== null) {
+                    // convertCsvToJson이 단일 객체를 반환한 경우 (키-값 쌍 CSV)
+                    // 이것이 "직접적으로 넣어서 가져온" 결과입니다.
+                    finalJsonDataToLoad = conversionResult;
+                    feedbackMessage = `${file.name} Key-Value CSV가 단일 JSON 객체로 로드되었습니다.`;
+                } else {
+                    // 예외적인 경우 (null, undefined 등), 빈 객체로 기본 처리
+                    console.error("Unexpected data type from CSV conversion:", conversionResult);
+                    finalJsonDataToLoad = {};
+                    feedbackMessage = `${file.name} CSV 변환 중 예상치 못한 결과 발생.`;
+                }
+
+                const jsonString = JSON.stringify(finalJsonDataToLoad, null, 2);
+
+                if (jsonInputField) {
+                    jsonInputField.value = jsonString;
+                    loadJson();
+                    showTemporaryMessage(saveFeedback, feedbackMessage, 5000);
+                } else {
+                    showConfirmationPopup({ title: '오류', text: 'JSON 입력 필드를 찾을 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
+                }
+            } catch (err) {
+                console.error("CSV Parsing Error in loadCsvFromFile:", err);
+                if (errorOutput) errorOutput.textContent = `CSV 파일 파싱 오류: ${err.message}`;
+                showConfirmationPopup({ title: 'CSV 파일 파싱 오류', text: `CSV 파일을 JSON으로 변환하는 중 오류가 발생했습니다: ${err.message}`, icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
+            }
+        };
+        // ... (reader.onerror 및 나머지 부분은 동일)
+        reader.readAsText(file);
+        if (fileInput.parentNode === document.body) {
+            document.body.removeChild(fileInput);
+        }
+    });
+
+    document.body.appendChild(fileInput);
+    fileInput.click();
+}
+
+function convertJsonToCSV(jsonData) {
+    if (jsonData === null || jsonData === undefined) {
+        throw new Error("데이터가 없어 CSV로 변환할 수 없습니다.");
+    }
+
+    let csvString = "";
+
+    const escapeCSVValue = (value) => {
+        if (value === null || value === undefined) return "";
+
+        let stringValue;
+        if (typeof value === 'object') { // Handles arrays and objects
+            stringValue = JSON.stringify(value);
+        } else {
+            stringValue = String(value);
+        }
+
+        // If the string contains a comma, newline, or double quote, enclose it in double quotes.
+        // Also escape existing double quotes by doubling them up.
+        if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('\r') || stringValue.includes('"')) {
+            stringValue = '"' + stringValue.replace(/"/g, '""') + '"';
+        }
+        return stringValue;
+    };
+
+    if (Array.isArray(jsonData)) {
+        if (jsonData.length === 0) {
+            // For an empty array, we can return an empty string or a header-only CSV.
+            // Let's return an empty string for simplicity, or you could define default headers.
+            return ""; // Or handle as an error/specific message if preferred
+        }
+
+        // Check if it's an array of objects (common case for CSV)
+        if (typeof jsonData[0] === 'object' && jsonData[0] !== null && !Array.isArray(jsonData[0])) {
+            const headers = [];
+            // Collect all unique keys from all objects to form the header row
+            jsonData.forEach(obj => {
+                if (typeof obj === 'object' && obj !== null) { // Ensure obj is an object
+                    Object.keys(obj).forEach(key => {
+                        if (!headers.includes(key)) {
+                            headers.push(key);
+                        }
+                    });
+                }
+            });
+
+            if (headers.length > 0) {
+                csvString += headers.map(escapeCSVValue).join(',') + '\r\n'; // Header row
+            } else {
+                // Array of objects, but all objects are empty or not structured as expected
+                // Or jsonData might be an array of empty objects e.g. [{}, {}]
+                // Fallback to treating as array of primitives if no headers found
+                if (jsonData.every(item => typeof item !== 'object' || item === null)) {
+                    csvString += "value\r\n"; // Default header
+                    jsonData.forEach(item => {
+                        csvString += escapeCSVValue(item) + '\r\n';
+                    });
+                    return csvString;
+                } else {
+                    // Potentially an array of empty objects or mixed types not fitting object structure
+                    // You might want to throw an error or return a specific message here.
+                    // For now, let's try to process rows even if headers were not fully derived.
+                }
+            }
+
+
+            jsonData.forEach(obj => {
+                if (typeof obj === 'object' && obj !== null) { // Process only if obj is an object
+                    const row = headers.map(header => {
+                        return escapeCSVValue(obj[header]);
+                    });
+                    csvString += row.join(',') + '\r\n';
+                } else {
+                    // Handle cases where an item in the array is not an object (e.g. [{}, null, {"a":1}])
+                    // This will create an empty line or a line with empty values based on headers.
+                    const row = headers.map(() => escapeCSVValue(null)); // Create empty cells for this row
+                    csvString += row.join(',') + '\r\n';
+                }
+            });
+        } else {
+            // Array of primitives (e.g., strings, numbers) or mixed non-object types
+            csvString += "value\r\n"; // Default header for an array of primitive values
+            jsonData.forEach(item => {
+                csvString += escapeCSVValue(item) + '\r\n';
+            });
+        }
+    } else if (typeof jsonData === 'object' && jsonData !== null) {
+        // Single object: convert to key-value pairs
+        csvString += "key,value\r\n";
+        Object.keys(jsonData).forEach(key => {
+            csvString += escapeCSVValue(key) + ',' + escapeCSVValue(jsonData[key]) + '\r\n';
+        });
+    } else {
+        // Single primitive value
+        csvString += "value\r\n";
+        csvString += escapeCSVValue(jsonData) + '\r\n';
+    }
+    return csvString;
+}
+
+async function saveJsonToCSV() {
+    if (currentJsonData === null || currentJsonData === undefined) {
+        showTemporaryMessage(saveFeedback, '저장할 JSON 데이터가 없습니다.', 3000);
+        return;
+    }
+
+    try {
+        const result = await showTextInputPopup({ //
+            title: 'CSV 파일 이름 입력',
+            inputLabel: '저장할 파일 이름을 입력해주세요 (.csv 확장자는 자동으로 추가됩니다):',
+            inputValue: 'data', // Default filename suggestion
+            confirmButtonText: '저장',
+            inputValidator: (value) => {
+                if (!value || value.trim().length === 0) {
+                    return '파일 이름은 비워둘 수 없습니다.';
+                }
+                return null; // Valid
+            },
+            hotInstance: hotInstanceRefForPopups //
+        });
+
+        if (result.isConfirmed && result.value) {
+            let filename = result.value.trim();
+            if (!filename.toLowerCase().endsWith('.csv')) {
+                filename += '.csv';
+            }
+
+            const csvString = convertJsonToCSV(currentJsonData);
+
+            // The convertJsonToCSV function should ideally throw an error for truly unconvertible types
+            // or return an empty string for empty data, which is fine.
+
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showTemporaryMessage(saveFeedback, `${filename} 파일이 성공적으로 CSV로 저장되었습니다!`, 3000);
+        } else {
+            showTemporaryMessage(saveFeedback, 'CSV 파일 저장이 취소되었습니다.', 3000);
+        }
+
+    } catch (e) {
+        if(errorOutput) errorOutput.textContent = 'CSV 파일 저장/변환 오류: ' + e.message;
+        showConfirmationPopup({ //
+            title: 'CSV 저장/변환 오류',
+            text: `JSON 데이터를 CSV로 저장하거나 변환하는 중 오류가 발생했습니다: ${e.message}`,
+            icon: 'error',
+            showCancelButton: false,
+            hotInstance: hotInstanceRefForPopups
+        });
     }
 }
 
