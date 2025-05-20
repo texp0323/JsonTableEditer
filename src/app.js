@@ -16,7 +16,6 @@ let searchInput, searchTargetSelect, searchResultsDropdown;
 let hotInstanceRefForPopups = null;
 
 function initialLoad() {
-    // JSON 데이터 제어 버튼 이벤트 리스너
     const loadBtn = document.getElementById("loadBtn");
     if (loadBtn) {
         loadBtn.addEventListener("click", loadJson);
@@ -42,7 +41,7 @@ function initialLoad() {
         });
     }
 
-    const uglifyBtn = document.getElementById("uglifyBtn"); // 버튼 텍스트는 "JSON 포맷팅" 등으로 변경하는 것이 좋습니다.
+    const uglifyBtn = document.getElementById("uglifyBtn");
     if (uglifyBtn) {
         uglifyBtn.addEventListener("click", () => {
             if (jsonInputField && jsonInputField.value) {
@@ -75,13 +74,11 @@ function initialLoad() {
                 buttons: [{ text: '닫기', role: 'confirm' }],
                 hotInstance: hotInstanceRefForPopups
             }).catch(error => {
-                console.error('showJsonDiffPopup 실행 중 오류:', error);
                 showConfirmationPopup({ title: '오류', text: '변경점 확인 중 오류가 발생했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
             });
         });
     }
 
-    // 파일 가져오기/내보내기 버튼 이벤트 리스너
     const loadFromFileButton = document.getElementById("loadFromFileBtn");
     if (loadFromFileButton) {
         loadFromFileButton.addEventListener("click", loadJsonFromFile);
@@ -92,10 +89,19 @@ function initialLoad() {
         saveToFileButton.addEventListener("click", saveJsonToFile);
     }
 
-    // 검색 기능 관련 DOM 요소 및 이벤트 리스너
-    searchInput = document.getElementById('searchInput'); // searchInput은 전역 변수로 선언되어 있어야 함
-    searchTargetSelect = document.getElementById('searchTargetSelect'); // searchTargetSelect은 전역 변수
-    searchResultsDropdown = document.getElementById('searchResultsDropdown'); // searchResultsDropdown은 전역 변수
+    const loadTemplatesFromFileBtn = document.getElementById("loadTemplatesFromFileBtn");
+    if (loadTemplatesFromFileBtn) {
+        loadTemplatesFromFileBtn.addEventListener("click", loadTemplatesFromFile);
+    }
+
+    const saveTemplatesToFileBtn = document.getElementById("saveTemplatesToFileBtn");
+    if (saveTemplatesToFileBtn) {
+        saveTemplatesToFileBtn.addEventListener("click", saveTemplatesToFile);
+    }
+
+    searchInput = document.getElementById('searchInput');
+    searchTargetSelect = document.getElementById('searchTargetSelect');
+    searchResultsDropdown = document.getElementById('searchResultsDropdown');
 
     if (searchInput) {
         searchInput.addEventListener('input', handleSearchInput);
@@ -103,33 +109,29 @@ function initialLoad() {
     if (searchTargetSelect) {
         searchTargetSelect.addEventListener('change', handleSearchInput);
     }
-    // 검색 결과 드롭다운 외부 클릭 시 숨김 처리
     document.addEventListener('click', (event) => {
         if (searchResultsDropdown && searchInput && !searchInput.contains(event.target) && !searchResultsDropdown.contains(event.target)) {
             searchResultsDropdown.style.display = 'none';
         }
     });
-    // 검색 결과 드롭다운 내부 클릭 시 이벤트 전파 중단 (드롭다운 닫힘 방지)
     if (searchResultsDropdown) {
         searchResultsDropdown.addEventListener('click', (event) => event.stopPropagation());
     }
 
-    // 마우스 버튼 (뒤로가기/앞으로가기) 및 우클릭 메뉴 제어
     window.addEventListener('mousedown', (event) => {
-        if (event.button === 3 || event.button === 4) { // 마우스 4, 5번 버튼 (보통 뒤로가기/앞으로가기)
+        if (event.button === 3 || event.button === 4) {
             event.preventDefault();
-            if (event.button === 3) { // 브라우저에 따라 다를 수 있으나, 보통 3번이 뒤로가기
+            if (event.button === 3) {
                 navigateHistory('back');
-            } else if (event.button === 4) { // 보통 4번이 앞으로가기
+            } else if (event.button === 4) {
                 navigateHistory('forward');
             }
         }
     });
-    window.addEventListener('contextmenu', (event) => { // 기본 우클릭 메뉴 방지
+    window.addEventListener('contextmenu', (event) => {
         event.preventDefault();
     });
 
-    // JSON 제어 패널 드래그 앤 드롭 이벤트 리스너
     const jsonControlPanel = document.querySelector('.json-control-panel');
     if (jsonControlPanel) {
         jsonControlPanel.addEventListener('dragover', handleDragOver);
@@ -139,7 +141,6 @@ function initialLoad() {
         console.warn('.json-control-panel 요소를 찾을 수 없어 드래그앤드롭 기능을 활성화할 수 없습니다.');
     }
 
-    // 3단 패널 리사이저 로직
     const panelContainer = document.querySelector('.main-layout-triple-panel');
     const panels = [
         document.querySelector('.json-control-panel'),
@@ -152,51 +153,37 @@ function initialLoad() {
     ];
 
     if (panelContainer && panels.every(p => p) && resizers.every(r => r)) {
-        setInitialPanelWidths(panelContainer, panels, resizers); // 초기 패널 너비 설정 함수 호출
+        setInitialPanelWidths(panelContainer, panels, resizers);
         window.addEventListener('resize', () => setInitialPanelWidths(panelContainer, panels, resizers));
 
         resizers.forEach((resizer, index) => {
             let isResizing = false;
             let startX = 0;
-            let initialWidths = []; // 각 리사이징 세션마다 초기 너비를 저장
+            let initialWidths = [];
 
             resizer.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 isResizing = true;
                 startX = e.clientX;
-                // 현재 패널들의 너비를 저장
                 initialWidths = [panels[index].offsetWidth, panels[index + 1].offsetWidth];
-
-                // mousemove와 mouseup 이벤트는 document에 등록해야
-                // 마우스가 리사이저 밖으로 나가도 계속 드래그 가능
                 document.addEventListener('mousemove', handleMouseMove);
                 document.addEventListener('mouseup', handleMouseUp);
             });
 
-            // handleMouseMove와 handleMouseUp은 각 리사이저의 mousedown 핸들러 내에 정의되어야
-            // 올바른 initialWidths와 isResizing 상태를 클로저로 참조할 수 있습니다.
             function handleMouseMove(e) {
                 if (!isResizing) return;
-
                 const deltaX = e.clientX - startX;
-                const minPanelWidth = 50; // 최소 패널 너비
-
+                const minPanelWidth = 50;
                 let newLeftWidth = initialWidths[0] + deltaX;
                 let newRightWidth = initialWidths[1] - deltaX;
-
-                // 최소 너비 보장 로직
                 if (newLeftWidth < minPanelWidth) {
                     newLeftWidth = minPanelWidth;
-                    // newRightWidth는 (전체 너비 - newLeftWidth)가 되어야 하나,
-                    // 여기서는 원래 두 패널의 합계 너비를 기준으로 조정
                     newRightWidth = initialWidths[0] + initialWidths[1] - newLeftWidth;
                 }
                 if (newRightWidth < minPanelWidth) {
                     newRightWidth = minPanelWidth;
                     newLeftWidth = initialWidths[0] + initialWidths[1] - newRightWidth;
                 }
-
-                // flex-basis를 사용하여 패널 너비 조정
                 panels[index].style.flexBasis = `${newLeftWidth}px`;
                 panels[index + 1].style.flexBasis = `${newRightWidth}px`;
             }
@@ -214,22 +201,18 @@ function initialLoad() {
     initializeThemeSwitcher();
 }
 
-
-// --- 드래그 앤 드롭 핸들러 함수들 ---
 function handleDragOver(event) {
-    event.preventDefault(); // 기본 동작 방지 (파일 열기 등)
+    event.preventDefault();
     event.stopPropagation();
-    // 드롭 영역에 시각적 피드백 추가 (CSS 클래스 활용)
     if (event.currentTarget && typeof event.currentTarget.classList !== 'undefined') {
         event.currentTarget.classList.add('dragover-active');
     }
-    event.dataTransfer.dropEffect = 'copy'; // 드롭 효과 표시
+    event.dataTransfer.dropEffect = 'copy';
 }
 
 function handleDragLeave(event) {
     event.preventDefault();
     event.stopPropagation();
-    // 드롭 영역에서 시각적 피드백 제거
     if (event.currentTarget && typeof event.currentTarget.classList !== 'undefined') {
         event.currentTarget.classList.remove('dragover-active');
     }
@@ -238,16 +221,14 @@ function handleDragLeave(event) {
 function handleFileDrop(event) {
     event.preventDefault();
     event.stopPropagation();
-    // 드롭 영역 시각적 피드백 제거
     if (event.currentTarget && typeof event.currentTarget.classList !== 'undefined') {
         event.currentTarget.classList.remove('dragover-active');
     }
 
     const files = event.dataTransfer.files;
     if (files.length > 0) {
-        const file = files[0]; // 첫 번째 파일만 처리
+        const file = files[0];
 
-        // 파일 타입 확인 (선택 사항이지만 권장)
         if (file.type === "application/json" || file.name.toLowerCase().endsWith('.json')) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -255,20 +236,17 @@ function handleFileDrop(event) {
                     const fileContent = e.target.result;
                     if (jsonInputField) {
                         jsonInputField.value = fileContent;
-                        loadJson(); // 기존 로드 함수 호출
+                        loadJson();
                         showTemporaryMessage(saveFeedback, `${file.name} 파일이 드롭되어 로드되었습니다.`, 3000);
                     } else {
-                        console.error('JSON 입력 필드를 찾을 수 없습니다.');
                         showConfirmationPopup({ title: '오류', text: 'JSON 입력 필드를 찾을 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
                     }
                 } catch (err) {
-                    console.error('파일 읽기 또는 JSON 파싱 오류 (드롭):', err);
                     if(errorOutput) errorOutput.textContent = `파일 오류 (드롭): ${err.message}`;
                     showConfirmationPopup({ title: '파일 로드 오류 (드롭)', text: `파일을 로드하거나 파싱하는 중 오류가 발생했습니다: ${err.message}`, icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
                 }
             };
             reader.onerror = (e) => {
-                console.error('파일 읽기 오류 (드롭):', e);
                 if(errorOutput) errorOutput.textContent = '파일을 읽는 중 오류가 발생했습니다 (드롭).';
                 showConfirmationPopup({ title: '파일 읽기 오류 (드롭)', text: '파일을 읽는 중 오류가 발생했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
             };
@@ -313,11 +291,10 @@ function handleSearchResultClick(params) {
     }
 }
 
-// 파일에서 JSON을 로드하는 함수
 function loadJsonFromFile() {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = '.json,application/json'; // JSON 파일만 선택하도록 필터링
+    fileInput.accept = '.json,application/json';
     fileInput.style.display = 'none';
 
     fileInput.addEventListener('change', (event) => {
@@ -331,85 +308,186 @@ function loadJsonFromFile() {
             try {
                 const fileContent = e.target.result;
                 if (jsonInputField) {
-                    jsonInputField.value = fileContent; // 텍스트 영역에 파일 내용 설정
-                    loadJson(); // 기존 로드 함수 호출
+                    jsonInputField.value = fileContent;
+                    loadJson();
                     showTemporaryMessage(saveFeedback, `${file.name} 파일이 로드되었습니다.`, 3000);
                 } else {
-                    console.error('JSON 입력 필드를 찾을 수 없습니다.');
                     showConfirmationPopup({ title: '오류', text: 'JSON 입력 필드를 찾을 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
                 }
             } catch (err) {
-                console.error('파일 읽기 또는 JSON 파싱 오류:', err);
                 if(errorOutput) errorOutput.textContent = `파일 오류: ${err.message}`;
                 showConfirmationPopup({ title: '파일 로드 오류', text: `파일을 로드하거나 파싱하는 중 오류가 발생했습니다: ${err.message}`, icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
             }
         };
         reader.onerror = (e) => {
-            console.error('파일 읽기 오류:', e);
             if(errorOutput) errorOutput.textContent = '파일을 읽는 중 오류가 발생했습니다.';
             showConfirmationPopup({ title: '파일 읽기 오류', text: '파일을 읽는 중 오류가 발생했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
         };
         reader.readAsText(file);
-        document.body.removeChild(fileInput); // 사용 후 요소 제거
+        document.body.removeChild(fileInput);
     });
 
     document.body.appendChild(fileInput);
     fileInput.click();
 }
 
-// 현재 JSON 데이터를 파일로 저장하는 함수
-async function saveJsonToFile() { // async 함수로 변경
+async function saveJsonToFile() {
     if (currentJsonData === null || currentJsonData === undefined) {
-        showTemporaryMessage(saveFeedback, '저장할 JSON 데이터가 없습니다.', 3000); // domUtils.js
+        showTemporaryMessage(saveFeedback, '저장할 JSON 데이터가 없습니다.', 3000);
         return;
     }
 
     try {
-        const result = await showTextInputPopup({ // customPopup.js
+        const result = await showTextInputPopup({
             title: '파일 이름 입력',
             inputLabel: '저장할 파일 이름을 입력해주세요 (.json 확장자는 자동으로 추가됩니다):',
-            inputValue: 'data', // 기본 파일 이름 (확장자 제외)
+            inputValue: 'data',
             confirmButtonText: '저장',
             inputValidator: (value) => {
                 if (!value || value.trim().length === 0) {
                     return '파일 이름은 비워둘 수 없습니다.';
                 }
-                // 추가적인 파일 이름 유효성 검사 (예: 특수문자 제한 등)가 필요하면 여기에 추가
-                return null; // 유효하면 null 반환
+                return null;
             },
-            hotInstance: hotInstanceRefForPopups // Handsontable 인스턴스가 있다면 전달하여 팝업 시 셀 선택 해제
+            hotInstance: hotInstanceRefForPopups
         });
 
         if (result.isConfirmed && result.value) {
             let filename = result.value.trim();
-            // 사용자가 .json을 입력했는지 확인하고, 없으면 추가
             if (!filename.toLowerCase().endsWith('.json')) {
                 filename += '.json';
             }
 
-            const jsonString = JSON.stringify(currentJsonData, null, 2); // 2칸 들여쓰기로 포맷팅
+            const jsonString = JSON.stringify(currentJsonData, null, 2);
             const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
 
             const a = document.createElement('a');
             a.href = url;
-            a.download = filename; // 사용자가 입력한 파일 이름 사용
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url); // URL 해제
+            URL.revokeObjectURL(url);
 
-            showTemporaryMessage(saveFeedback, `${filename} 파일이 성공적으로 저장되었습니다!`, 3000); // domUtils.js
+            showTemporaryMessage(saveFeedback, `${filename} 파일이 성공적으로 저장되었습니다!`, 3000);
         } else {
-            showTemporaryMessage(saveFeedback, '파일 저장이 취소되었습니다.', 3000); // domUtils.js
+            showTemporaryMessage(saveFeedback, '파일 저장이 취소되었습니다.', 3000);
         }
 
     } catch (e) {
-        console.error('JSON 파일 저장 오류:', e);
-        if(errorOutput) errorOutput.textContent = 'JSON 파일 저장 오류: ' + e.message; // domUtils.js
-        showConfirmationPopup({ // customPopup.js
+        if(errorOutput) errorOutput.textContent = 'JSON 파일 저장 오류: ' + e.message;
+        showConfirmationPopup({
             title: '파일 저장 오류',
             text: `JSON 데이터를 파일로 저장하는 중 오류가 발생했습니다: ${e.message}`,
+            icon: 'error',
+            showCancelButton: false,
+            hotInstance: hotInstanceRefForPopups
+        });
+    }
+}
+
+function loadTemplatesFromFile() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json,application/json';
+    fileInput.style.display = 'none';
+
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const fileContent = e.target.result;
+                const loadedTemplatesArray = JSON.parse(fileContent);
+                if (!Array.isArray(loadedTemplatesArray)) {
+                    throw new Error("템플릿 파일은 배열 형태여야 합니다.");
+                }
+
+                const count = templateManager.setAndSaveUserTemplates(loadedTemplatesArray);
+                showTemporaryMessage(saveFeedback, `템플릿 파일 '${file.name}'에서 ${count}개의 사용자 템플릿을 로드했습니다.`, 3000);
+            } catch (err) {
+                if(errorOutput) errorOutput.textContent = `템플릿 파일 오류: ${err.message}`;
+                showConfirmationPopup({
+                    title: '템플릿 파일 로드 오류',
+                    text: `템플릿 파일을 로드하거나 파싱하는 중 오류: ${err.message}`,
+                    icon: 'error',
+                    showCancelButton: false,
+                    hotInstance: hotInstanceRefForPopups
+                });
+            }
+        };
+        reader.onerror = (e) => {
+            if(errorOutput) errorOutput.textContent = '템플릿 파일을 읽는 중 오류가 발생했습니다.';
+            showConfirmationPopup({
+                title: '템플릿 파일 읽기 오류',
+                text: '템플릿 파일을 읽는 중 오류가 발생했습니다.',
+                icon: 'error',
+                showCancelButton: false,
+                hotInstance: hotInstanceRefForPopups
+            });
+        };
+        reader.readAsText(file);
+        document.body.removeChild(fileInput);
+    });
+
+    document.body.appendChild(fileInput);
+    fileInput.click();
+}
+
+async function saveTemplatesToFile() {
+    const userTemplates = templateManager.getUserTemplates();
+
+    if (!userTemplates || userTemplates.length === 0) {
+        showTemporaryMessage(saveFeedback, '저장할 사용자 정의 템플릿이 없습니다.', 3000);
+        return;
+    }
+
+    try {
+        const result = await showTextInputPopup({
+            title: '템플릿 파일 이름 입력',
+            inputLabel: '저장할 템플릿 파일 이름을 입력해주세요 (.json 확장자는 자동으로 추가됩니다):',
+            inputValue: 'user_templates',
+            confirmButtonText: '저장',
+            inputValidator: (value) => {
+                if (!value || value.trim().length === 0) {
+                    return '파일 이름은 비워둘 수 없습니다.';
+                }
+                return null;
+            },
+            hotInstance: hotInstanceRefForPopups
+        });
+
+        if (result.isConfirmed && result.value) {
+            let filename = result.value.trim();
+            if (!filename.toLowerCase().endsWith('.json')) {
+                filename += '.json';
+            }
+
+            const jsonString = JSON.stringify(userTemplates, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showTemporaryMessage(saveFeedback, `사용자 템플릿이 ${filename} 파일로 성공적으로 저장되었습니다!`, 3000);
+        } else {
+            showTemporaryMessage(saveFeedback, '템플릿 파일 저장이 취소되었습니다.', 3000);
+        }
+
+    } catch (e) {
+        if(errorOutput) errorOutput.textContent = '템플릿 파일 저장 오류: ' + e.message;
+        showConfirmationPopup({
+            title: '템플릿 파일 저장 오류',
+            text: `템플릿을 파일로 저장하는 중 오류가 발생했습니다: ${e.message}`,
             icon: 'error',
             showCancelButton: false,
             hotInstance: hotInstanceRefForPopups
@@ -452,7 +530,7 @@ function destroyHotInstanceAndUpdateRef() {
 }
 
 function updateJsonData(pathString, newValueString, isBatchOperation = false) {
-    if (currentJsonData === null || currentJsonData === undefined) { console.error("데이터 업데이트 오류: currentJsonData가 없습니다."); return; }
+    if (currentJsonData === null || currentJsonData === undefined) { return; }
     const keys = pathString.replace(/\[(\d+)\]/g, '.$1').split('.'); const lastKeyOrIndexString = keys.pop(); const parentPath = keys.join('.');
     let parentObject; if (parentPath === "") parentObject = currentJsonData; else parentObject = getObjectByPath(currentJsonData, parentPath);
     if (parentPath === "" && pathString === lastKeyOrIndexString && (typeof currentJsonData !== 'object' || currentJsonData === null)) {
@@ -460,12 +538,10 @@ function updateJsonData(pathString, newValueString, isBatchOperation = false) {
         displayDataInTable(currentJsonData, 'value', currentJsonData, ''); return;
     }
     if (!parentObject || (typeof parentObject !== 'object' && !Array.isArray(parentObject))) {
-        console.error("데이터 업데이트 오류: 부모 객체를 찾을 수 없거나 객체/배열이 아님.", {pathString, parentPath, parentObject});
         showConfirmationPopup({ title: '오류', text: '데이터 업데이트 중 오류가 발생했습니다 (부모 경로 확인 필요).', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups }); return;
     }
     const targetKeyOrIndex = /^\d+$/.test(lastKeyOrIndexString) && Array.isArray(parentObject) ? parseInt(lastKeyOrIndexString, 10) : lastKeyOrIndexString;
     if (Array.isArray(parentObject) && (targetKeyOrIndex < 0 || targetKeyOrIndex >= parentObject.length)) {
-        console.error("데이터 업데이트 오류: 배열 인덱스 범위 초과.", {targetKeyOrIndex, arrayLength: parentObject.length});
         showConfirmationPopup({ title: '오류', text: '배열 인덱스 범위를 벗어났습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups }); return;
     }
     let fullRebuildNeeded = true; const originalValue = parentObject[targetKeyOrIndex];
@@ -529,7 +605,6 @@ function handlePathSegmentClicked(path) {
         }
         displayDataInTable(dataForTable, newKeyName, currentJsonData, path, { syncTreeView: true });
     } else {
-        console.warn(`Data not found for path: ${path}`);
         showConfirmationPopup({ title: '오류', text: `경로 '${path}'에 해당하는 데이터를 찾을 수 없습니다.`, icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
     }
 }
@@ -548,31 +623,19 @@ export function displayDataInTable(dataToDisplay, dataKeyNameToUse, rootJsonData
         currentJsonDataRef: () => currentJsonData,
         dataPathString: dataPathStringToRecord,
         displayTableCallback: displayDataInTable,
-        // Add template manager functions to config
         getTemplates: templateManager.getTemplates,
         addTemplate: templateManager.addTemplate
     };
-    hotInstanceRefForPopups = displayTableInHot(dataToDisplay, dataKeyNameToUse, configForTable); // displayDataWithHandsontable in your context
+    hotInstanceRefForPopups = displayTableInHot(dataToDisplay, dataKeyNameToUse, configForTable);
 
 
     if (options.syncTreeView && treeViewContainer && dataPathStringToRecord !== undefined && dataPathStringToRecord !== null) {
         const targetNodeElement = treeViewContainer.querySelector(`.tree-node[data-path="${dataPathStringToRecord}"]`);
         if (targetNodeElement) {
             selectNode(targetNodeElement);
-            // 자동 펼침 로직 제거: 사용자가 직접 화살표를 클릭해야 펼쳐짐
-            // const pathsToEnsureExpanded = new Set();
-            // if (dataPathStringToRecord !== "") {
-            //     const segments = dataPathStringToRecord.split('.'); let currentCumulativePath = '';
-            //     for (let i = 0; i < segments.length -1; i++) { currentCumulativePath = currentCumulativePath ? `${currentCumulativePath}.${segments[i]}` : segments[i]; pathsToEnsureExpanded.add(currentCumulativePath); }
-            // }
-            // if (pathsToEnsureExpanded.size > 0) expandNodesByPath(treeViewContainer, pathsToEnsureExpanded);
-
             setTimeout(() => {
                 const finalTargetNode = treeViewContainer.querySelector(`.tree-node[data-path="${dataPathStringToRecord}"]`);
                 if (finalTargetNode) {
-                    // 자동 펼침 로직 제거
-                    // const toggleIcon = finalTargetNode.querySelector('.toggle-icon'); const childrenContainer = finalTargetNode.nextElementSibling;
-                    // if (toggleIcon && toggleIcon.textContent === '▶' && childrenContainer && childrenContainer.classList.contains('tree-node-children')) { childrenContainer.style.display = 'block'; toggleIcon.textContent = '▼'; }
                     finalTargetNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 50);
@@ -598,11 +661,11 @@ function navigateHistory(direction) {
                 { syncTreeView: false }
             );
         } catch (error) {
-            console.error("Error navigating history:", error);
             showConfirmationPopup({ title: '오류', text: '히스토리 복원 중 오류가 발생했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotInstanceRefForPopups });
         } finally {
             historyManager.setNavigationInProgress(false);
         }
     }
 }
+
 document.addEventListener('DOMContentLoaded', initialLoad);

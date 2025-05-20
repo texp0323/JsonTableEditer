@@ -8,21 +8,15 @@
 </head>
 <body>
 
+<h2 class="title">Json 테이블 편집기</h2>
+<div class="template-buttons">
+    <button id="loadTemplatesFromFileBtn" title="파일에서 템플릿 불러오기">📥 템플릿 로드</button>
+    <button id="saveTemplatesToFileBtn" title="현재 사용자 템플릿을 파일로 저장">💾 템플릿 저장</button>
+</div>
 <div class="theme-switcher">
     <button class="theme-button" id="theme-btn-1" title="고대비 다크 (Charcoal & Amber)" style="background-color: var(--color-warning);"></button>
     <button class="theme-button" id="theme-btn-2" title="클래식 라이트 (Classic Purple)" style="background-color: var(--color-primary);"></button>
     <button class="theme-button" id="theme-btn-3" title="소프트 민트 (Mint & Gray)" style="background-color: #4DB6AC;"></button>
-</div>
-
-<h2 class="title">Json 테이블 편집기</h2>
-<div class="search-container">
-    <input type="text" id="searchInput" placeholder="검색어를 입력 하세요">
-    <select id="searchTargetSelect">
-        <option value="both">Key & Value</option>
-        <option value="key">Key Only</option>
-        <option value="value">Value Only</option>
-    </select>
-    <div id="searchResultsDropdown" class="search-results-dropdown"></div>
 </div>
 
 <div class="main-layout-triple-panel"> <div class="panel json-control-panel"> <h2 class="tab_title">JSON 데이터 제어</h2>
@@ -45,7 +39,17 @@
     </div>
 
     <div class="resizer-vertical" id="resizer-2"></div> <div class="panel table-view-panel"> <h2 class="tab_title">데이터 테이블 뷰</h2>
-        <div id="table-view"></div>
+        <div id="table-view">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="검색어를 입력 하세요">
+                <select id="searchTargetSelect">
+                    <option value="both">Key & Value</option>
+                    <option value="key">Key Only</option>
+                    <option value="value">Value Only</option>
+                </select>
+                <div id="searchResultsDropdown" class="search-results-dropdown"></div>
+            </div>
+        </div>
     </div>
 </div>
 

@@ -395,7 +395,7 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                     }
                 },
                 "set_template": { // Update this item
-                    name: '템플릿 설정',
+                    name: '템플릿으로 채우기',
                     hidden: function() {
                         // ... (hidden logic remains largely the same, ensuring it's a modifiable value cell) ...
                         const hotMenu = this;
@@ -484,7 +484,7 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                     }
                 }, // End of set_template
                 "add_as_template": { // New context menu item
-                    name: '템플릿으로 추가',
+                    name: '템플릿에 추가',
                     hidden: function() {
                         const hotMenu = this;
                         const selection = hotMenu.getSelectedRangeLast();
