@@ -34,9 +34,78 @@
     box-shadow: 0 0 0 3px var(--bg-main), 0 0 0 5px var(--outline-color);
 }
 
+/* ========================================================================== */
+/* 테마 1: 소프트 다크 (Charcoal & Amber)                                    */
+/* ========================================================================== */
+body.theme-soft-dark {
+    /* 기본 배경 - 진한 회색 계열로 부드럽게 */
+    --bg-main: #1E2227;
+    --bg-panel: #282C34;
+    --bg-hover: #323842;
+
+    /* 텍스트 - 순수 흰색보다 부드러운 색상 */
+    --text-main: #E2E8F0;
+    --text-light: #A9B1C1;
+    --text-muted: #798499;
+    --text-inverted: #202428;
+    --text-key: #61AFEF; /* 부드러운 파란색 */
+
+    /* 타이틀 색상 */
+    --title-color: #E2E8F0;
+    --panel-title-color: #61AFEF; /* 부드러운 파란색 */
+    --panel-title-after-bg-start: #61AFEF;
+    --panel-title-after-bg-end: color-mix(in srgb, #61AFEF 70%, black);
+
+    /* 버튼 색상 */
+    --button-bg: #4D78CC;
+    --button-text: #E2E8F0;
+    --button-hover-bg: #5B8AE5;
+
+    /* 테두리 및 아웃라인 */
+    --outline-color: #61AFEF;
+    --border-color: #3E4452;
+
+    /* 검색 관련 */
+    --search-input-bg: #323842;
+    --search-input-text: #E2E8F0;
+    --search-input-border: #3E4452;
+    --search-dropdown-border: #3E4452;
+    --search-item-hover-bg: #3A404D;
+
+    /* 트리 노드 */
+    --tree-node-key: #61AFEF; /* 부드러운 파란색 */
+    --tree-node-type: #A9B1C1;
+    --selected-node-text: #E2E8F0;
+    --selected-node-bg: #4D78CC; /* 선택 배경은 짙은 파란색 */
+
+    /* 테이블 스타일 */
+    --table-bg: #282C34;
+    --table-header-bg: #252931;
+    --table-header-text: #61AFEF;
+    --table-cell-bg: #282C34;
+    --table-cell-text: #E2E8F0;
+    --table-cell-stripe-bg: #2E333D;
+    --table-border-color: #3E4452;
+    --table-selected-cell-bg: rgba(77, 120, 204, 0.4); /* 반투명 파란색 */
+    --table-selected-cell-text: #FFFFFF;
+
+    /* 스크롤바 */
+    --scrollbar-track-bg: #282C34;
+    --scrollbar-thumb-bg: #3E4452;
+    --scrollbar-thumb-hover-bg: #4A5264;
+
+    /* Diff 관련 */
+    --diff-sbs-border: #3E4452;
+    --diff-sbs-pane1-border-right: #3E4452;
+    --diff-added-bg: rgba(152, 195, 121, 0.2); /* 부드러운 녹색 */
+    --diff-removed-bg: rgba(224, 108, 117, 0.2); /* 부드러운 빨간색 */
+    --diff-navi-highlight-outline: #61AFEF;
+    --diff-navi-highlight-bg: rgba(97, 175, 239, 0.15);
+    --diff-header-border-bottom: #3E4452;
+}
 
 /* ========================================================================== */
-/* 테마 1: 클래식 퍼플 라이트 (기본 테마)                                   */
+/* 테마 2: 클래식 퍼플 라이트 (기본 테마)                                   */
 /* ========================================================================== */
 body.theme-classic-purple {
     --bg-main: #F8F9FA;
@@ -99,127 +168,71 @@ body.theme-classic-purple {
 }
 
 /* ========================================================================== */
-/* 테마 2: 고대비 다크 (Charcoal & Amber)                                    */
-/* ========================================================================== */
-body.theme-high-contrast-dark {
-    --bg-main: #1A1D21;
-    --bg-panel: #252A30;
-    --bg-hover: #30363F;
-    /* --bg-selected: rgba(245, 158, 11, 0.2); /* --color-warning 기반, selected-node-bg 로 구체화 */
-
-    --text-main: #E1E1E1;
-    --text-light: #B0B8C4;
-    --text-muted: #808A98;
-    --text-inverted: #1A1D21;
-    --text-key: var(--color-warning);
-    /* --text-accent: #FFD580; /* selected-node-text 로 구체화 */
-
-    --title-color: #F0F0F0;
-    --panel-title-color: var(--color-warning);
-    --panel-title-after-bg-start: var(--color-warning);
-    --panel-title-after-bg-end: color-mix(in srgb, var(--color-warning) 70%, black);
-
-    --button-bg: var(--color-warning);
-    --button-text: #1A1D21;
-    --button-hover-bg: color-mix(in srgb, var(--color-warning) 85%, #000000);
-
-    --outline-color: var(--color-warning);
-    --border-color: #404852;
-
-    --search-input-bg: #2F353D;
-    --search-input-text: #E1E1E1;
-    --search-input-border: #404852;
-    --search-dropdown-border: #404852;
-    --search-item-hover-bg: #3A4048;
-
-    --tree-node-key: var(--color-warning);
-    --tree-node-type: #B0B8C4;
-    /* 선택된 트리 노드 가독성 확인 (어두운 텍스트 on 앰버 배경) - 양호 */
-    --selected-node-text: #1A1D21;
-    --selected-node-bg: var(--color-warning);
-
-    --table-bg: #252A30; /* Dark panel background */
-    --table-header-bg: #1A1D21; /* Main dark background for header */
-    --table-header-text: var(--color-warning); /* Amber text for header */
-    --table-cell-bg: #252A30; /* Dark panel background for cells */
-    --table-cell-text: var(--text-main); /* Light text for cells */
-    --table-cell-stripe-bg: #2A2F35; /* Slightly different dark for stripes */
-    --table-border-color: #404852;
-    --table-selected-cell-bg: var(--color-warning); /* Amber for selection background */
-    --table-selected-cell-text: #1A1D21; /* Dark text for selected cell */
-
-    --scrollbar-track-bg: #252A30;
-    --scrollbar-thumb-bg: #404852;
-    --scrollbar-thumb-hover-bg: #505862;
-
-    --diff-sbs-border: #404852;
-    --diff-sbs-pane1-border-right: #404852;
-    --diff-added-bg: rgba(76, 175, 80, 0.2);
-    --diff-removed-bg: rgba(248, 113, 113, 0.2);
-    --diff-navi-highlight-outline: var(--color-warning);
-    --diff-navi-highlight-bg: color-mix(in srgb, var(--color-warning) 30%, transparent);
-    --diff-header-border-bottom: #404852;
-}
-
-/* ========================================================================== */
 /* 테마 3: 소프트 민트 (Mint & Gray)                                         */
 /* ========================================================================== */
 body.theme-soft-mint {
-    --bg-main: #EFF2F5;
+    /* 기본 배경 색상 - 약간 푸른 회색 조합으로 업데이트 */
+    --bg-main: #F0F5F5;
     --bg-panel: #FFFFFF;
-    --bg-hover: #E6EAEF;
-    /* --bg-selected: rgba(77, 182, 172, 0.15); /* 민트 계열, selected-node-bg 로 구체화 */
+    --bg-hover: #E2EDF0;
 
-    --text-main: var(--color-dark);
-    --text-light: #5F737C;
-    --text-muted: #8CA0A8;
-    --text-inverted: var(--text-inverted-default);
-    --text-key: #3E8980;
-    /* --text-accent: #D32F2F; /* selected-node-text 로 구체화 */
+    /* 텍스트 색상 - 더 강한 대비를 위해 조정 */
+    --text-main: #2C3E50;
+    --text-light: #546E7A;
+    --text-muted: #7D97A5;
+    --text-inverted: #FFFFFF;
+    --text-key: #00897B; /* 더 진한 민트 */
 
-    --title-color: var(--color-dark);
-    --panel-title-color: #4DB6AC;
-    --panel-title-after-bg-start: #4DB6AC;
-    --panel-title-after-bg-end: color-mix(in srgb, #4DB6AC 70%, black);
+    /* 타이틀 색상 - 민트 계열 유지하되 강화 */
+    --title-color: #2C3E50;
+    --panel-title-color: #009688; /* 더 선명한 민트 */
+    --panel-title-after-bg-start: #009688;
+    --panel-title-after-bg-end: color-mix(in srgb, #009688 70%, black);
 
-    --button-bg: #4DB6AC;
-    --button-text: var(--text-inverted-default);
-    --button-hover-bg: color-mix(in srgb, #4DB6AC 80%, black);
+    /* 버튼 색상 - 더 선명한 민트로 업데이트 */
+    --button-bg: #26A69A;
+    --button-text: #FFFFFF;
+    --button-hover-bg: #00897B;
 
-    --outline-color: #4DB6AC;
-    --border-color: #D1D9E0;
+    /* 테두리 및 아웃라인 */
+    --outline-color: #26A69A;
+    --border-color: #CFD8DC;
 
+    /* 검색 관련 */
     --search-input-bg: #FFFFFF;
-    --search-input-text: var(--color-dark);
-    --search-input-border: #BCC8D1;
-    --search-dropdown-border: #D1D9E0;
-    --search-item-hover-bg: #E0E5E9;
+    --search-input-text: #2C3E50;
+    --search-input-border: #B0BEC5;
+    --search-dropdown-border: #CFD8DC;
+    --search-item-hover-bg: #E0F2F1; /* 옅은 민트색 */
 
-    --tree-node-key: #3E8980;
-    --tree-node-type: #5F737C;
-    /* 선택된 트리 노드 가독성 향상 */
-    --selected-node-text: var(--text-inverted-default); /* 흰색 텍스트 */
-    --selected-node-bg: #4DB6AC;                      /* 진한 민트색 배경 */
+    /* 트리 노드 */
+    --tree-node-key: #00796B; /* 더 깊은 민트 */
+    --tree-node-type: #546E7A;
+    --selected-node-text: #FFFFFF;
+    --selected-node-bg: #26A69A; /* 선명한 민트색 배경 */
 
+    /* 테이블 스타일 - 다양한 색조 적용 */
     --table-bg: #FFFFFF;
-    --table-header-bg: #F0F4F7; /* Light minty gray header */
-    --table-header-text: var(--text-main);
+    --table-header-bg: #E0F2F1; /* 옅은 민트색 헤더 */
+    --table-header-text: #2C3E50;
     --table-cell-bg: #FFFFFF;
-    --table-cell-text: var(--text-main);
-    --table-cell-stripe-bg: #F7FAFC; /* Very light stripe */
-    --table-border-color: #D1D9E0;
-    --table-selected-cell-bg: #4cb5ab; /* Light mint for selection */
-    --table-selected-cell-text: var(--text-main);
+    --table-cell-text: #2C3E50;
+    --table-cell-stripe-bg: #F5FAFA; /* 매우 옅은 민트색 줄무늬 */
+    --table-border-color: #B2DFDB; /* 옅은 민트색 테두리 */
+    --table-selected-cell-bg: #80CBC4; /* 중간 민트 선택 */
+    --table-selected-cell-text: #2C3E50;
 
-    --scrollbar-track-bg: #EFF2F5;
-    --scrollbar-thumb-bg: #BCC8D1;
-    --scrollbar-thumb-hover-bg: #A8B6BF;
+    /* 스크롤바 */
+    --scrollbar-track-bg: #F0F5F5;
+    --scrollbar-thumb-bg: #80CBC4; /* 민트색 스크롤바 */
+    --scrollbar-thumb-hover-bg: #4DB6AC;
 
-    --diff-sbs-border: #D1D9E0;
-    --diff-sbs-pane1-border-right: #D1D9E0;
-    --diff-added-bg: #DDF0DD;
-    --diff-removed-bg: #FBE0E0;
-    --diff-navi-highlight-outline: #4DB6AC;
-    --diff-navi-highlight-bg: rgba(77, 182, 172, 0.2);
-    --diff-header-border-bottom: #D1D9E0;
+    /* Diff 관련 */
+    --diff-sbs-border: #B2DFDB;
+    --diff-sbs-pane1-border-right: #B2DFDB;
+    --diff-added-bg: #E0F2E0; /* 조금 더 밝은 녹색 */
+    --diff-removed-bg: #FCE4EC; /* 약간 분홍빛 나는 빨간색 */
+    --diff-navi-highlight-outline: #26A69A;
+    --diff-navi-highlight-bg: rgba(38, 166, 154, 0.2);
+    --diff-header-border-bottom: #B2DFDB;
 }

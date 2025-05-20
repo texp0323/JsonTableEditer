@@ -3,8 +3,8 @@ const THEME_STORAGE_KEY = 'selected_theme_json_editor';
 const themes = [
     {
         buttonId: 'theme-btn-1',
-        themeClass: 'theme-high-contrast-dark',
-        name: 'High Contrast Dark',
+        themeClass: 'theme-soft-dark',
+        name: 'Soft Dark',
     },
     {
         buttonId: 'theme-btn-2',
