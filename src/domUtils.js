@@ -50,6 +50,7 @@ export function updateTableViewPathDisplay(dataPathString, onPathSegmentClickCal
         rootLink.textContent = 'root';
         rootLink.style.textDecoration = 'underline';
         rootLink.style.cursor = 'pointer';
+        rootLink.style.color = 'var(--table-cell-text)';
         rootLink.onclick = (e) => {
             e.preventDefault();
             onPathSegmentClickCallback(''); // root 경로는 빈 문자열입니다.
@@ -92,6 +93,7 @@ export function updateTableViewPathDisplay(dataPathString, onPathSegmentClickCal
                 link.textContent = displaySegment;
                 link.style.textDecoration = 'underline';
                 link.style.cursor = 'pointer';
+                link.style.color = 'var(--table-cell-text)';
                 // 클로저를 사용하여 각 링크가 올바른 경로를 가지도록 합니다.
                 link.onclick = ((pathForCallback) => (e) => {
                     e.preventDefault();
