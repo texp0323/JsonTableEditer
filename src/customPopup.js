@@ -1,7 +1,7 @@
 import Swal from 'sweetalert2';
 import * as Diff from 'diff';
 
-export { showJsonDiffPopup, showTextInputPopup, showConfirmationPopup, showCustomFormPopup };
+export { showJsonDiffPopup, showTextInputPopup, showConfirmationPopup, showUrlProcessPopup };
 
 function showJsonDiffPopup(options) {
     const {
@@ -154,6 +154,136 @@ function showCustomFormPopup(options) {
     return showCustomPopup({ title, html: formHtml, buttons,
         preConfirm: () => { const form = document.getElementById('custom-popup-form'); if (form && typeof form.checkValidity === 'function' && !form.checkValidity()) { Swal.showValidationMessage('모든 필수 항목을 올바르게 입력해주세요.'); return false; } if (form) { const fd = new FormData(form); const res = {}; formItems.forEach(item => { if (item.type === 'checkbox') res[item.id] = fd.has(item.id); else if (fd.has(item.id)) res[item.id] = fd.get(item.id); else res[item.id] = undefined; }); return res; } return {}; },
         didOpen: (popup) => { const form = popup.querySelector('#custom-popup-form'); if (form) { const firstEl = form.querySelector('input:not([type="hidden"]), textarea, select'); if (firstEl) firstEl.focus(); } }
+    });
+}
+
+/**
+ * URL 처리(인코딩/디코딩)를 위한 커스텀 팝업을 표시합니다.
+ * 팝업 내부에 입력 필드, 실행 버튼, 출력 필드가 있습니다.
+ * @param {object} options - 팝업 옵션
+ * @param {string} [options.title='URL 작업'] - 팝업 제목
+ * @param {string} [options.initialInputValue=''] - 입력 필드의 초기값
+ * @param {string} [options.inputLabel='입력:'] - 입력 필드 라벨
+ * @param {string} [options.outputLabel='결과:'] - 출력 필드 라벨
+ * @param {string} [options.actionButtonText='실행'] - 팝업 내부 실행 버튼 텍스트
+ * @param {string} [options.confirmButtonText='결과 복사 및 닫기'] - SweetAlert 확인 버튼 텍스트
+ * @param {string} [options.cancelButtonText='팝업 닫기'] - SweetAlert 취소 버튼 텍스트
+ * @param {function} options.onExecuteAction - (inputValue: string) => string. 실제 작업을 수행하고 결과를 문자열로 반환하는 콜백. 오류 시 "오류:"로 시작하는 문자열 반환.
+ * @param {object} [options.hotInstance] - Handsontable 인스턴스 (셀 선택 해제용)
+ * @returns {Promise<object>} SweetAlert2 결과 객체 (showCustomPopup의 반환 형식 따름)
+ */
+async function showUrlProcessPopup(options) {
+    const {
+        title = 'URL 작업',
+        initialInputValue = '',
+        inputLabel = '입력:',
+        outputLabel = '결과:',
+        actionButtonText = '실행',
+        confirmButtonText = '결과를 메인 편집기에 복사',
+        cancelButtonText = '팝업 닫기',
+        onExecuteAction,
+        hotInstance // 이 옵션은 showCustomPopup으로 전달됩니다.
+    } = options;
+
+    // 팝업 내 요소들의 ID가 중복되지 않도록 고유 ID 생성 (필요시)
+    const uniqueSuffix = Date.now();
+    const inputAreaId = `popup-url-input-${uniqueSuffix}`;
+    const outputAreaId = `popup-url-output-${uniqueSuffix}`;
+    const executeBtnId = `popup-execute-action-${uniqueSuffix}`;
+    const validationMsgId = `popup-url-validation-${uniqueSuffix}`;
+
+    const popupHtml = `
+        <div style="text-align: left; display: flex; flex-direction: column; gap: 0.8em;">
+            <div>
+                <label for="${inputAreaId}" style="display: block; margin-bottom: .3em; font-weight: normal;">${inputLabel}</label>
+                <textarea id="${inputAreaId}" class="swal2-textarea" style="width: 98%; min-height: 80px; box-sizing: border-box;" placeholder="여기에 문자열을 입력하세요...">${initialInputValue}</textarea>
+            </div>
+            <div style="text-align: center;">
+                <button type="button" id="${executeBtnId}" class="swal2-styled" style="padding: 0.5em 1em; margin-top: 0.5em; margin-bottom: 0.5em;">${actionButtonText}</button>
+            </div>
+            <div>
+                <label for="${outputAreaId}" style="display: block; margin-bottom: .3em; font-weight: normal;">${outputLabel}</label>
+                <textarea id="${outputAreaId}" class="swal2-textarea" style="width: 98%; min-height: 80px; box-sizing: border-box;" readonly placeholder="결과가 여기에 표시됩니다..."></textarea>
+            </div>
+            <div id="${validationMsgId}" style="color: red; text-align: center; min-height: 1.2em; margin-top: .5em; font-size: 0.9em;"></div>
+        </div>
+    `;
+
+    // 기존 showCustomPopup 함수를 호출하여 Swal 팝업을 생성합니다.
+    return showCustomPopup({
+        title: title,
+        html: popupHtml,
+        width: '50em',
+        padding: '1em', // showCustomPopup의 기본값을 따르거나 여기서 오버라이드
+        customClass: {
+            popup: 'custom-swal-popup-wider-text-diff', // 필요시 CSS 조정
+            htmlContainer: 'custom-swal-html-container-url-ops' // CSS로 내부 패딩/마진 조절용
+        },
+        buttons: [
+            { text: confirmButtonText, role: 'confirm' },
+            { text: cancelButtonText, role: 'cancel' }
+        ],
+        didOpen: (popupElement) => {
+            // popupElement는 Swal 팝업의 DOM 요소입니다.
+            const inputArea = popupElement.querySelector(`#${inputAreaId}`);
+            const outputArea = popupElement.querySelector(`#${outputAreaId}`);
+            const executeBtn = popupElement.querySelector(`#${executeBtnId}`);
+            const validationMsgArea = popupElement.querySelector(`#${validationMsgId}`);
+
+            if (inputArea) inputArea.focus();
+
+            if (executeBtn && inputArea && outputArea && validationMsgArea) {
+                executeBtn.addEventListener('click', () => {
+                    const inputValue = inputArea.value;
+                    validationMsgArea.textContent = ''; // 이전 메시지 클리어
+
+                    if (inputValue.trim() === '') {
+                        outputArea.value = '';
+                        validationMsgArea.textContent = '입력값이 비어있습니다.';
+                        return;
+                    }
+
+                    if (typeof onExecuteAction === 'function') {
+                        try {
+                            // onExecuteAction 콜백은 app.js에서 실제 encode/decode 로직을 담아 전달됨
+                            const resultValue = onExecuteAction(inputValue);
+                            outputArea.value = resultValue;
+                            // 성공 시에는 유효성 검사 메시지 영역을 비워둠
+                        } catch (e) {
+                            // onExecuteAction 내부에서 오류 발생 시 (콜백이 throw한 경우)
+                            const errorMessage = `실행 중 예외: ${e.message}`;
+                            outputArea.value = errorMessage;
+                            validationMsgArea.textContent = errorMessage;
+                            console.error("onExecuteAction 콜백에서 예외 발생:", e);
+                        }
+                    } else {
+                        const errMsg = "오류: 실행할 작업(onExecuteAction)이 정의되지 않았습니다.";
+                        outputArea.value = errMsg;
+                        validationMsgArea.textContent = errMsg;
+                    }
+                });
+            }
+        },
+        preConfirm: () => {
+            // preConfirm은 showCustomPopup의 'confirm' 역할 버튼 클릭 시 호출됨
+            const outputArea = document.getElementById(outputAreaId); // Swal은 document에서 ID로 찾음
+            const validationMsgArea = document.getElementById(validationMsgId);
+
+            if (validationMsgArea) validationMsgArea.textContent = ''; // 이전 메시지 클리어
+
+            if (outputArea && outputArea.value.trim() !== '') {
+                // 출력 영역에 내용이 있고, 그 내용이 오류 메시지가 아닐 때만 값을 반환
+                if (outputArea.value.startsWith('오류:') || outputArea.value.startsWith('실행 중 예외:')) {
+                    if (validationMsgArea) validationMsgArea.textContent = "오류가 있는 결과는 복사할 수 없습니다.";
+                    return false; // 팝업 유지
+                }
+                return outputArea.value; // 이 값이 result.formData (또는 result.value)로 전달됨
+            } else {
+                if (validationMsgArea) validationMsgArea.textContent = "메인 편집기에 복사할 결과가 없습니다.";
+                return false; // 팝업 유지
+            }
+        },
+        hotInstance: hotInstance // 전달받은 hotInstance를 그대로 넘김
     });
 }
 

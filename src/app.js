@@ -1,5 +1,5 @@
 import { minifyJson, prettyJson } from './jsonUtils.js';
-import { showJsonDiffPopup, showTextInputPopup, showConfirmationPopup } from './customPopup.js';
+import { showJsonDiffPopup, showTextInputPopup, showConfirmationPopup, showUrlProcessPopup } from './customPopup.js';
 import { jsonInputField, saveFeedback, errorOutput, treeViewContainer, tableViewContainer, showTemporaryMessage, updateTableViewPathDisplay, resetBaseUI } from './domUtils.js';
 import { getObjectByPath, convertToTypedValue } from './dataUtils.js';
 import { buildTree, selectNode, getSelectedNodePath, getExpandedNodePaths, expandNodesByPath } from './treeView.js';
@@ -212,6 +212,95 @@ function initialLoad() {
     } else {
         console.warn('3-패널 레이아웃에 필요한 요소를 모두 찾을 수 없습니다. 리사이저가 동작하지 않을 수 있습니다.');
     }
+
+    const encodeUrlBtn = document.getElementById("encodeUrlBtn");
+    if (encodeUrlBtn) {
+        encodeUrlBtn.addEventListener("click", async () => {
+            const initialVal = jsonInputField ? jsonInputField.value : '';
+            try {
+                const result = await showUrlProcessPopup({
+                    title: 'URL 인코딩',
+                    initialInputValue: initialVal,
+                    inputLabel: '인코딩할 원본 문자열:',
+                    outputLabel: '인코딩된 결과:',
+                    actionButtonText: '인코딩 실행',
+                    onExecuteAction: (inputValue) => {
+                        try {
+                            return encodeUrlString(inputValue);
+                        } catch (e) {
+                            console.error("encodeUrlString 함수 실행 중 오류:", e);
+                            return `오류: ${e.message}`;
+                        }
+                    },
+                    confirmButtonText: '결과를 메인 편집기에 복사',
+                    cancelButtonText: '팝업 닫기',
+                    hotInstance: hotInstanceRefForPopups
+                });
+
+                if (result.isConfirmed && result.formData && result.formData !== false) {
+                    const outputValue = result.formData;
+                    if (jsonInputField) {
+                        jsonInputField.value = outputValue;
+                        if(saveFeedback) showTemporaryMessage(saveFeedback, '결과가 메인 편집기에 복사되었습니다.', 2000);
+                    }
+                } else if (result.isDismissed && result.dismiss === 'cancel') { // 여기가 중요! Swal.DismissReason.cancel 대신 'cancel' 문자열로 직접 비교
+                    if(saveFeedback) showTemporaryMessage(saveFeedback, '인코딩 팝업을 닫았습니다.', 1500, 'info');
+                } else if (result.isConfirmed && result.formData === false) {
+                    // preConfirm이 false를 반환하여 팝업이 닫히지 않은 경우
+                }
+
+            } catch (error) {
+                // 이 catch 블록은 showUrlProcessPopup 자체에서 발생한 예외 또는 promise 거부 시 실행됩니다.
+                console.error("URL 인코딩 팝업 처리 중 오류:", error); // 여기서 error 객체가 ReferenceError("Swal is not defined") 였던 것입니다.
+                if(errorOutput) errorOutput.textContent = 'URL 인코딩 팝업 오류: ' + error.message;
+                if(saveFeedback) showTemporaryMessage(saveFeedback, 'URL 인코딩 팝업을 여는 중 문제가 발생했습니다.', 3000, 'error');
+            }
+        });
+    }
+
+    const decodeUrlBtn = document.getElementById("decodeUrlBtn");
+    if (decodeUrlBtn) {
+        decodeUrlBtn.addEventListener("click", async () => {
+            const initialVal = jsonInputField ? jsonInputField.value : '';
+            try {
+                const result = await showUrlProcessPopup({
+                    title: 'URL 디코딩',
+                    initialInputValue: initialVal,
+                    inputLabel: '디코딩할 URL 인코딩된 문자열:',
+                    outputLabel: '디코딩된 결과:',
+                    actionButtonText: '디코딩 실행',
+                    onExecuteAction: (inputValue) => {
+                        try {
+                            return decodeUrlString(inputValue);
+                        } catch (e) {
+                            console.error("decodeUrlString 함수 실행 중 오류:", e);
+                            return `오류: ${e.message}`;
+                        }
+                    },
+                    confirmButtonText: '결과를 메인 편집기에 복사',
+                    cancelButtonText: '팝업 닫기',
+                    hotInstance: hotInstanceRefForPopups
+                });
+
+                if (result.isConfirmed && result.formData && result.formData !== false) {
+                    const outputValue = result.formData;
+                    if (jsonInputField) {
+                        jsonInputField.value = outputValue;
+                        if(saveFeedback) showTemporaryMessage(saveFeedback, '결과가 메인 편집기에 복사되었습니다.', 2000);
+                    }
+                } else if (result.isDismissed && result.dismiss === 'cancel') { // 여기도 'cancel' 문자열로 직접 비교
+                    if(saveFeedback) showTemporaryMessage(saveFeedback, '디코딩 팝업을 닫았습니다.', 1500, 'info');
+                } else if (result.isConfirmed && result.formData === false) {
+                    // preConfirm이 false를 반환.
+                }
+            } catch (error) {
+                console.error("URL 디코딩 팝업 처리 중 오류:", error);
+                if(errorOutput) errorOutput.textContent = 'URL 디코딩 팝업 오류: ' + error.message;
+                if(saveFeedback) showTemporaryMessage(saveFeedback, 'URL 디코딩 팝업을 여는 중 문제가 발생했습니다.', 3000, 'error');
+            }
+        });
+    }
+
     initializeThemeSwitcher(); //
 }
 
@@ -302,6 +391,48 @@ function handleSearchResultClick(params) {
     if (params && typeof displayDataInTable === 'function') {
         displayDataInTable(params.data, params.dataKeyName, params.rootJsonData, params.dataPathString || '');
         if (searchResultsDropdown) searchResultsDropdown.style.display = 'none';
+    }
+}
+
+/**
+ * 주어진 문자열을 URL 인코딩합니다 (퍼센트 인코딩).
+ * 이 함수는 URI의 구성 요소(예: 쿼리 파라미터 값)를 인코딩하는 데 적합합니다.
+ *
+ * @param {string} str - 인코딩할 문자열
+ * @returns {string} URL 인코딩된 문자열
+ * @throws {TypeError} 입력값이 문자열이 아닐 경우 발생
+ */
+function encodeUrlString(str) {
+    if (typeof str !== 'string') {
+        throw new TypeError('입력값은 문자열이어야 합니다.');
+    }
+    try {
+        return encodeURIComponent(str);
+    } catch (e) {
+        // URIError가 발생할 수 있는 경우 (예: 잘못된 형식의 URI 시퀀스)
+        console.error("URL 인코딩 중 오류 발생:", e);
+        return str; // 오류 발생 시 원본 문자열 반환 또는 다른 오류 처리
+    }
+}
+
+/**
+ * URL 인코딩된 문자열을 디코딩합니다.
+ * 이 함수는 encodeURIComponent()로 인코딩된 문자열을 디코딩하는 데 사용됩니다.
+ *
+ * @param {string} encodedStr - 디코딩할 URL 인코딩된 문자열
+ * @returns {string} 디코딩된 문자열
+ * @throws {TypeError} 입력값이 문자열이 아닐 경우 발생
+ */
+function decodeUrlString(encodedStr) {
+    if (typeof encodedStr !== 'string') {
+        throw new TypeError('입력값은 문자열이어야 합니다.');
+    }
+    try {
+        return decodeURIComponent(encodedStr);
+    } catch (e) {
+        // URIError (예: 잘못된 퍼센트 인코딩 시퀀스)
+        console.error("URL 디코딩 중 오류 발생:", e);
+        return encodedStr; // 오류 발생 시 원본 문자열 반환 또는 다른 오류 처리
     }
 }
 

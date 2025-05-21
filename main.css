@@ -21,3 +21,14 @@
 
 /* theme */
 @import url('css/theme.css');
+
+/* CSS 파일 또는 <style> 태그 내에 추가 */
+.custom-swal-html-container-url-ops {
+    padding-top: 0.5em !important;
+    padding-bottom: 1em !important;
+    overflow: visible !important; /* 내부 요소가 잘리지 않도록 */
+}
+.swal2-popup.custom-swal-popup-wider-text-diff .swal2-html-container { /* 필요시 기본 마진 조정 */
+    margin-right: 0.5em;
+    margin-left: 0.5em;
+}
