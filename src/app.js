@@ -247,7 +247,7 @@ function initialLoad() {
     });
     if (searchResultsDropdown) searchResultsDropdown.addEventListener('click', (event) => event.stopPropagation());
 
-    window.addEventListener('mousedown', (event) => {
+    window.addEventListener('mouseup', (event) => {
         if (event.button === 3 || event.button === 4) {
             event.preventDefault();
             if (event.button === 3) navigateHistory('back');
