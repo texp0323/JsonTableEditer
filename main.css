@@ -23,5 +23,8 @@
 @import url('css/theme.css');
 
 /* template */
-
 @import url('css/template.css');
+
+/* schema */
+
+@import url('css/visualSchemaEditor.css');

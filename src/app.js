@@ -15,11 +15,18 @@ import * as historyManager from './historyManager.js';
 import * as searchController from './searchController.js';
 import * as templateManager from './templateManager.js';
 import { initializeThemeSwitcher } from './theme-switcher.js';
+import { initVisualSchemaEditor } from './visualSchemaEditor.js';
 
 let currentJsonData = null;
 let originalJsonDataAtLoad = null;
 let searchInput, searchTargetSelect, searchResultsDropdown;
 let hotInstanceRefForPopups = null;
+
+const mainLayoutTriplePanel = document.querySelector('.main-layout-triple-panel');
+const schemaEditorPanelContainer = document.getElementById('schemaEditorPanelContainer');
+const toggleSchemaEditorBtn = document.getElementById('toggleSchemaEditorBtn');
+
+let isSchemaEditorVisible = false;
 
 function encodeUrlString(str) {
     if (typeof str !== 'string') { throw new TypeError('입력값은 문자열이어야 합니다.'); }
@@ -124,6 +131,54 @@ async function openTemplateManagement() {
         },
         hotInstance: hotInstanceRefForPopups
     });
+}
+
+function showMainJsonEditorView() {
+    if (mainLayoutTriplePanel) mainLayoutTriplePanel.style.display = 'flex';
+    if (schemaEditorPanelContainer) schemaEditorPanelContainer.style.display = 'none';
+    if (toggleSchemaEditorBtn) toggleSchemaEditorBtn.textContent = '📜 스키마 편집기';
+    isSchemaEditorVisible = false;
+}
+
+function showSchemaEditorView() {
+    if (mainLayoutTriplePanel) mainLayoutTriplePanel.style.display = 'none';
+    if (schemaEditorPanelContainer) {
+        schemaEditorPanelContainer.style.display = 'flex';
+
+        const editorContentArea = document.getElementById('schema-editor-content-area');
+        const mainSchemaTextarea = document.getElementById('jsonSchema');
+
+        let initialSchemaForEditor = {
+            $schema: "http://json-schema.org/draft-07/schema#",
+            type: "object",
+            properties: {},
+            description: ""
+        };
+        if (mainSchemaTextarea && mainSchemaTextarea.value) {
+            try {
+                const parsedSchema = JSON.parse(mainSchemaTextarea.value);
+                if (typeof parsedSchema === 'object' && parsedSchema !== null) {
+                    initialSchemaForEditor = parsedSchema;
+                } else {
+                    console.warn("메인 스키마 텍스트 영역의 내용이 유효한 객체가 아니므로 기본 스키마로 초기화합니다.");
+                }
+            } catch (e) {
+                console.warn("메인 스키마 텍스트 영역 파싱 실패, 기본 스키마로 시각적 편집기 초기화:", e.message);
+            }
+        }
+
+        if(editorContentArea){
+            initVisualSchemaEditor(editorContentArea, initialSchemaForEditor, (updatedSchema) => {
+                if (mainSchemaTextarea) {
+                    mainSchemaTextarea.value = JSON.stringify(updatedSchema, null, 2);
+                }
+            });
+        } else {
+            console.error("Schema editor content area ('schema-editor-content-area') not found.");
+        }
+    }
+    if (toggleSchemaEditorBtn) toggleSchemaEditorBtn.textContent = 'JSON 편집기로 돌아가기';
+    isSchemaEditorVisible = true;
 }
 
 function initialLoad() {
@@ -289,6 +344,17 @@ function initialLoad() {
             }
         });
     } else { console.warn('3-패널 레이아웃에 필요한 요소를 모두 찾을 수 없습니다. 리사이저가 동작하지 않을 수 있습니다.'); }
+
+    if (toggleSchemaEditorBtn) {
+        toggleSchemaEditorBtn.addEventListener('click', () => {
+            if (isSchemaEditorVisible) {
+                showMainJsonEditorView();
+            } else {
+                showSchemaEditorView();
+            }
+        });
+    }
+
     initializeThemeSwitcher();
 }
 

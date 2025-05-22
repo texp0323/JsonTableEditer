@@ -413,7 +413,6 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         }
                     }
                 },
-                "---------": Handsontable.plugins.ContextMenu.SEPARATOR,
                 "duplicate_row": {
                     name: "선택 행 복제",
                     hidden: function() { const s = this.getSelectedRangeLast(); return !s || !(Array.isArray(data) || (typeof data === 'object' && data !== null && !Array.isArray(data))); },
@@ -511,6 +510,7 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         }
                     }
                 },
+                "---------": Handsontable.plugins.ContextMenu.SEPARATOR,
                 "set_template": {
                     name: '템플릿으로 채우기',
                     hidden: function() {

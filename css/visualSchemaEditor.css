@@ -1,0 +1,162 @@
+/* visualSchemaEditor.css */
+
+/* 스키마 편집기 전용 패널 내부 컨텐츠 영역 */
+#schema-editor-content-area {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg, 16px); /* 섹션 간 간격 */
+}
+
+/* 루트 스키마 편집 섹션 및 각 편집기 컨트롤 영역 기본 스타일 */
+.visual-editor-section-card { /* JavaScript에서 id 대신 이 클래스를 추가하는 것을 고려 */
+    background-color: var(--bg-panel); /* 패널 배경색 사용 */
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: var(--spacing-md, 16px);
+    border-radius: var(--border-radius-md, 8px);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+}
+
+/* 라벨 공통 스타일 */
+#schema-editor-content-area label,
+.visual-editor-section-card label {
+    font-weight: 500;
+    color: var(--text-light, #4b5563);
+    margin-bottom: var(--spacing-xs, 4px);
+    font-size: 0.9em;
+}
+
+/* 입력 필드 및 선택 상자 공통 스타일 */
+#schema-editor-content-area input[type="text"],
+#schema-editor-content-area input[type="number"],
+#schema-editor-content-area select {
+    width: 100%;
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px); /* Tailwind p-2 px-3 느낌 */
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: var(--border-radius-sm, 6px);
+    background-color: var(--bg-main); /* 텍스트 영역과 유사한 배경 */
+    color: var(--text-main);
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-speed, 0.2s), box-shadow var(--transition-speed, 0.2s);
+}
+
+#schema-editor-content-area input[type="text"]:focus,
+#schema-editor-content-area input[type="number"]:focus,
+#schema-editor-content-area select:focus {
+    border-color: var(--outline-color, #7b47d6);
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--outline-color, #7b47d6) 20%, transparent);
+}
+
+#schema-editor-content-area select {
+    appearance: none; /* 기본 화살표 제거 (필요시 커스텀 화살표 추가) */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239aa0a6'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem; /* 화살표 공간 확보 */
+}
+
+
+/* 루트 스키마 타입 선택 및 설명 입력 부분 */
+#visualRootSchemaType {
+    max-width: 200px; /* 너무 길어지지 않도록 */
+}
+
+/* 객체 속성 편집 섹션 */
+#visualObjectEditorControls h3,
+#visualArrayEditorControls h3 {
+    color: var(--panel-title-color, var(--color-primary));
+    margin-bottom: var(--spacing-md, 16px);
+    padding-bottom: var(--spacing-sm, 8px);
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    font-size: 1.1em;
+}
+
+/* 속성 목록 컨테이너 */
+#visualPropertiesList {
+    border: 1px dashed var(--border-color-default, #e5e7eb);
+    background-color: color-mix(in srgb, var(--bg-hover-default, #f3f4f6) 50%, transparent);
+    min-height: 50px; /* 내용 없을 때도 영역 표시 */
+    padding: var(--spacing-sm, 8px);
+    border-radius: var(--border-radius-sm, 6px);
+}
+
+/* 각 속성 편집 아이템 */
+.property-editor-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-md, 10px) var(--spacing-sm, 8px);
+    border-bottom: 1px solid var(--border-color-default, #e5e7eb);
+    background-color: var(--bg-panel); /* 패널 배경 */
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-sm); /* 아이템 간 간격 */
+}
+
+.property-editor-item:last-child {
+    border-bottom: none;
+}
+
+.property-editor-item input[type="text"],
+.property-editor-item select {
+    font-size: 0.875rem; /* 약간 작게 */
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+}
+
+.property-editor-item .prop-name {
+    flex: 2; /* 이름 필드가 좀 더 넓게 */
+    font-family: var(--font-mono); /* 키 이름은 모노스페이스 */
+}
+
+.property-editor-item .prop-type {
+    flex: 1.5;
+    min-width: 120px; /* 타입 선택 충분한 너비 */
+}
+
+.property-editor-item .prop-description {
+    flex: 3; /* 설명 필드가 가장 넓게 */
+}
+
+/* 버튼 스타일 */
+#visualAddPropertyBtn { /* 새 속성 추가 버튼 */
+    background-color: var(--color-primary);
+    color: var(--text-inverted-default);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    border-radius: var(--border-radius-md, 8px);
+    font-weight: 500;
+    transition: background-color var(--transition-speed, 0.2s);
+}
+
+#visualAddPropertyBtn:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.property-editor-item button { /* 속성 삭제 버튼 */
+    background-color: var(--color-danger);
+    color: var(--text-inverted-default);
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+    border-radius: var(--border-radius-sm, 6px);
+    font-size: 0.8rem;
+    font-weight: bold;
+    transition: background-color var(--transition-speed, 0.2s);
+    flex-shrink: 0; /* 버튼 크기 유지 */
+}
+
+.property-editor-item button:hover {
+    background-color: color-mix(in srgb, var(--color-danger) 80%, black);
+}
+
+/* 배열 항목 편집 섹션 (Object 에디터와 유사한 스타일 적용 가능) */
+#visualArrayEditorControls .flex > label {
+    flex-shrink: 0; /* 라벨 너비 유지 */
+    width: auto; /* 내용에 맞게 */
+    margin-right: var(--spacing-sm);
+}
+#visualArrayEditorControls input[type="number"] {
+    width: 100px; /* 숫자 입력 필드 너비 고정 */
+}
+#visualArrayEditorControls select,
+#visualArrayEditorControls input[type="text"] {
+    flex-grow: 1; /* 가능한 공간 채움 */
+}
