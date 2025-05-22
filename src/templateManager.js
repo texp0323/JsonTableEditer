@@ -2,6 +2,7 @@ const TEMPLATES_STORAGE_KEY = 'userJsonEditorTemplates_v1';
 let currentTemplates = [];
 
 const DEFAULT_TEMPLATES = [
+    { name: "Null 값 (Null Value)", type: "null", value: null, isDefault: true },
     { name: "빈 객체 (Empty Object)", type: "object", value: {}, isDefault: true },
     { name: "빈 배열 (Empty Array)", type: "array", value: [], isDefault: true }
 ];

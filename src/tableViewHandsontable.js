@@ -1,7 +1,28 @@
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
-import { showTextInputPopup, showConfirmationPopup } from './customPopup.js'; // customPopup.js 의존성
-import Swal from 'sweetalert2'; // Import Swal for the select popup
+import { showTextInputPopup, showConfirmationPopup } from './customPopup.js';
+import Swal from 'sweetalert2';
+
+function deepClone(obj) {
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+    try {
+        return JSON.parse(JSON.stringify(obj));
+    } catch (e) {
+        console.warn("JSON.stringify를 사용한 deepClone 실패, 수동 클론 시도:", e);
+        if (Array.isArray(obj)) {
+            return obj.map(item => deepClone(item));
+        }
+        const cloned = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                cloned[key] = deepClone(obj[key]);
+            }
+        }
+        return cloned;
+    }
+}
 
 let hotInstance = null;
 let cellMetaMap = new Map();
@@ -12,14 +33,30 @@ function prepareHotCell(value, dataPath, keyOrIndex, isKeyColumn = false, config
     let cellMeta = { isDrillable: false, drillPath: null, originalKey: String(keyOrIndex), originalValue: value, readOnly: isKeyColumn };
     const currentItemPathResolver = () => {
         if (keyOrIndex === '' || keyOrIndex === null || keyOrIndex === undefined) return dataPath;
-        if (!dataPath) { const rootData = configForCellPrep.getObjectByPathCallback(configForCellPrep.rootJsonData, ''); if (Array.isArray(rootData)) return `[${keyOrIndex}]`; return String(keyOrIndex); }
+        if (!dataPath) {
+            const rootData = configForCellPrep.getObjectByPathCallback(configForCellPrep.rootJsonData, '');
+            if (Array.isArray(rootData)) return `[${keyOrIndex}]`;
+            return String(keyOrIndex);
+        }
         const parentActual = configForCellPrep.getObjectByPathCallback(configForCellPrep.rootJsonData, dataPath);
-        if (Array.isArray(parentActual)) return `${dataPath}[${keyOrIndex}]`; return `${dataPath}.${keyOrIndex}`;
+        if (Array.isArray(parentActual)) return `${dataPath}[${keyOrIndex}]`;
+        return `${dataPath}.${keyOrIndex}`;
     };
-    if (value === undefined) { displayValue = "undefined"; cellMeta.readOnly = false; }
-    else if (typeof value === 'object' && value !== null) { displayValue = Array.isArray(value) ? `[Array (${value.length})]` : `{Object}`; cellMeta.isDrillable = true; cellMeta.drillPath = currentItemPathResolver(); cellMeta.readOnly = true; }
-    else if (value === null) { displayValue = "null"; cellMeta.readOnly = false; }
-    else { displayValue = String(value); if (!isKeyColumn && !cellMeta.isDrillable) cellMeta.readOnly = false; }
+    if (value === undefined) {
+        displayValue = "undefined";
+        cellMeta.readOnly = false;
+    } else if (typeof value === 'object' && value !== null) {
+        displayValue = Array.isArray(value) ? `[Array (${value.length})]` : `{Object}`;
+        cellMeta.isDrillable = true;
+        cellMeta.drillPath = currentItemPathResolver();
+        cellMeta.readOnly = true;
+    } else if (value === null) {
+        displayValue = "null";
+        cellMeta.readOnly = false;
+    } else {
+        displayValue = String(value);
+        if (!isKeyColumn && !cellMeta.isDrillable) cellMeta.readOnly = false;
+    }
     if (isKeyColumn) cellMeta.readOnly = true;
     return { displayValue, cellMeta };
 }
@@ -44,7 +81,6 @@ function _prepareTableData(data, dataKeyName, config) {
                 }
             }
             localColHeaders = potentialColHeaders.length > 0 ? potentialColHeaders : ((data.length > 0) ? ["(내용 없음)"] : ["새 열"]);
-
             data.forEach((obj, rowIndex) => {
                 const rowValues = [];
                 const currentItemObject = (typeof obj === 'object' && obj !== null) ? obj : {};
@@ -57,9 +93,6 @@ function _prepareTableData(data, dataKeyName, config) {
                 });
                 localHotData.push(rowValues);
             });
-            if (data.length === 0 && Array.isArray(localColHeaders) && localColHeaders.length === 1 && (localColHeaders[0] === "새 열" || localColHeaders[0] === "(내용 없음)" || localColHeaders[0] === "데이터 없음")) {
-            }
-
         } else {
             localColHeaders = ["Index", "Value"];
             localHotData = data.map((item, index) => {
@@ -74,14 +107,12 @@ function _prepareTableData(data, dataKeyName, config) {
     } else if (typeof data === 'object' && data !== null) {
         const objectKeys = Object.keys(data);
         const shouldExpandArrays = objectKeys.length > 0 && objectKeys.every(key => Array.isArray(data[key]));
-
         if (shouldExpandArrays) {
             let maxExpandedLength = 0;
             objectKeys.forEach(key => { maxExpandedLength = Math.max(maxExpandedLength, data[key].length); });
             const tempColHeaders = ["항목 (Key)"];
             for (let i = 0; i < maxExpandedLength; i++) { tempColHeaders.push(String(i)); }
             localColHeaders = tempColHeaders;
-
             localHotData = objectKeys.map((key, rowIndex) => {
                 const valueArray = data[key];
                 const rowCells = [];
@@ -89,7 +120,6 @@ function _prepareTableData(data, dataKeyName, config) {
                 const { displayValue: keyDisplay, cellMeta: keyMeta } = prepareHotCell(key, keyItemPath, key, true, configForCellPrep);
                 rowCells.push(keyDisplay);
                 newLocalCellMetaMap.set(`${rowIndex}-0`, keyMeta);
-
                 for (let arrIdx = 0; arrIdx < maxExpandedLength; arrIdx++) {
                     if (arrIdx < valueArray.length) {
                         const item = valueArray[arrIdx];
@@ -166,85 +196,239 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         const hotMenu = this;
                         const selection = hotMenu.getSelectedRangeLast();
                         if (!selection) return true;
-
                         const { from } = selection;
                         const r = from.row;
                         const c = from.col;
-
                         if (c !== 0) return true;
-                        if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-                            return true;
-                        }
+                        if (typeof data !== 'object' || data === null || Array.isArray(data)) return true;
                         const objectKeys = Object.keys(data);
-                        if (r >= objectKeys.length) {
-                            return true;
-                        }
-                        const keyName = objectKeys[r];
-                        const value = data[keyName];
-                        if (typeof value !== 'object' || value === null) {
-                            return true;
-                        }
-                        return false;
+                        if (r >= objectKeys.length) return true;
+                        const keyNameLocal = objectKeys[r];
+                        const value = data[keyNameLocal];
+                        return !(typeof value === 'object' && value !== null);
                     },
                     callback: function(_key, selection) {
                         const hotMenu = this;
-
                         if (!selection || selection.length === 0 || !selection[0] || !selection[0].start) {
                             console.error('View Content callback: 유효하지 않은 selection 객체입니다.', selection);
                             return;
                         }
-
                         const startCell = selection[0].start;
                         const r = startCell.row;
-
                         const objectKeys = Object.keys(data);
                         if (r >= objectKeys.length) {
                             console.error('View Content callback: 행 인덱스가 범위를 벗어났습니다.', r, objectKeys);
                             return;
                         }
-                        const keyName = objectKeys[r];
-                        const valueToDisplay = data[keyName];
-
+                        const keyNameLocal = objectKeys[r];
+                        const valueToDisplay = data[keyNameLocal];
                         if (typeof valueToDisplay !== 'object' || valueToDisplay === null) {
-                            console.error('View Content callback: 대상 값이 객체나 배열이 아닙니다.', valueToDisplay);
                             showConfirmationPopup({ title: '오류', text: '내용을 볼 수 있는 대상(객체/배열)이 아닙니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
                             return;
                         }
-
                         const basePath = config.dataPathString || "";
-                        const drillPath = basePath ? `${basePath}.${keyName}` : keyName;
-
-                        config.displayTableCallback(
-                            valueToDisplay,
-                            keyName,
-                            config.rootJsonData,
-                            drillPath
-                        );
+                        const drillPath = basePath ? `${basePath}.${keyNameLocal}` : keyNameLocal;
+                        config.displayTableCallback(valueToDisplay, keyNameLocal, config.rootJsonData, drillPath);
                     }
                 },
                 "row_above": { name: '위에 행 삽입' },
                 "row_below": { name: '아래에 행 삽입' },
-                "col_left": { name: '왼쪽에 열 삽입' },
-                "col_right": { name: '오른쪽에 열 삽입' },
+                "col_left": {
+                    name: '왼쪽에 열 삽입',
+                    hidden: function() {
+                        const hotMenu = this;
+                        // 현재 'data'는 displayDataWithHandsontable 함수의 클로저 변수입니다.
+                        const isExpandedArrayView = typeof data === 'object' && data !== null && !Array.isArray(data) && Object.keys(data).length > 0 && Object.keys(data).every(k => Array.isArray(data[k]));
+                        const isArrayOfObjectsView = Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0]);
+
+                        if (isExpandedArrayView) {
+                            const selection = hotMenu.getSelectedRangeLast();
+                            // '항목 (Key)' 열(0번 열)의 왼쪽에는 삽입 불가 (또는 맨 앞에 삽입하는 로직으로 확장 가능)
+                            return !selection || selection.from.col === 0;
+                        }
+                        if (isArrayOfObjectsView) return false; // 객체 배열 뷰에서는 항상 메뉴 표시
+                        return true; // 그 외 다른 뷰에서는 숨김
+                    },
+                    callback: async function(_key, selectionCallbackArg) {
+                        const hot = this;
+                        if (!selectionCallbackArg || selectionCallbackArg.length === 0 || !selectionCallbackArg[0] || !selectionCallbackArg[0].start) return;
+                        const targetCol = selectionCallbackArg[0].start.col;
+
+                        const isExpandedArrayView = typeof data === 'object' && data !== null && !Array.isArray(data) && Object.keys(data).length > 0 && Object.keys(data).every(k => Array.isArray(data[k]));
+                        const isArrayOfObjectsView = Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0]);
+
+                        if (isExpandedArrayView) {
+                            // ... (이전과 동일한 "객체 내 배열 펼침 뷰" 로직) ...
+                            if (targetCol === 0) {
+                                showConfirmationPopup({
+                                    title: '알림',
+                                    text: "'항목 (Key)' 열 왼쪽에는 열을 추가할 수 없습니다.",
+                                    icon: 'info',
+                                    hotInstance: hot
+                                });
+                                return;
+                            }
+                            const arrayIndexToInsert = targetCol - 1;
+                            let modified = false;
+                            Object.keys(data).forEach(objKey => {
+                                if (Array.isArray(data[objKey])) {
+                                    if (arrayIndexToInsert >= 0 && arrayIndexToInsert <= data[objKey].length) {
+                                        data[objKey].splice(arrayIndexToInsert, 0, null);
+                                        modified = true;
+                                    }
+                                }
+                            });
+                            if (modified) {
+                                config.refreshTreeViewCallback('col_inserted_expanded_array_view');
+                                const {
+                                    preparedHotData: newHotData,
+                                    preparedColHeaders: newColHeaders,
+                                    preparedCellMetaMap: newMapForMeta
+                                } = _prepareTableData(data, dataKeyName, config);
+                                cellMetaMap = newMapForMeta;
+                                hot.updateSettings({colHeaders: newColHeaders});
+                                hot.loadData(newHotData);
+                            }
+                        } else if (isArrayOfObjectsView) {
+                            // 액션 이름을 'insert_col_start'로 변경
+                            hot.alter('insert_col_start', targetCol, 1, 'custom_insert_col_left_array_of_objects');
+                        } else {
+                            showConfirmationPopup({
+                                title: '작업 불가',
+                                text: '현재 데이터 보기 방식에서는 이 열 삽입 작업을 지원하지 않습니다.',
+                                icon: 'error',
+                                hotInstance: hot
+                            });
+                        }
+                    }
+                    },
+                "col_right": {
+                    name: '오른쪽에 열 삽입',
+                    hidden: function() {
+                        // col_left와 유사하게, 모든 열의 오른쪽에 삽입 가능하므로 대부분의 경우 false 반환
+                        const isExpandedArrayView = typeof data === 'object' && data !== null && !Array.isArray(data) && Object.keys(data).length > 0 && Object.keys(data).every(k => Array.isArray(data[k]));
+                        const isArrayOfObjectsView = Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0]);
+
+                        if (isExpandedArrayView) return false;
+                        if (isArrayOfObjectsView) return false;
+                        return true;
+                    },
+                    callback: async function(_key, selectionCallbackArg) {
+                        const hot = this;
+                        if (!selectionCallbackArg || selectionCallbackArg.length === 0 || !selectionCallbackArg[0] || !selectionCallbackArg[0].start) return;
+                        const targetCol = selectionCallbackArg[0].start.col;
+
+                        const isExpandedArrayView = typeof data === 'object' && data !== null && !Array.isArray(data) && Object.keys(data).length > 0 && Object.keys(data).every(k => Array.isArray(data[k]));
+                        const isArrayOfObjectsView = Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0]);
+
+                        if (isExpandedArrayView) {
+                            // ... (이전과 동일한 "객체 내 배열 펼침 뷰" 로직) ...
+                            const arrayIndexToInsert = targetCol === 0 ? 0 : targetCol;
+                            let modified = false;
+                            Object.keys(data).forEach(objKey => {
+                                if (Array.isArray(data[objKey])) {
+                                    data[objKey].splice(arrayIndexToInsert, 0, null);
+                                    modified = true;
+                                }
+                            });
+                            if (modified) {
+                                config.refreshTreeViewCallback('col_inserted_expanded_array_view');
+                                const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(data, dataKeyName, config);
+                                cellMetaMap = newMapForMeta;
+                                hot.updateSettings({ colHeaders: newColHeaders });
+                                hot.loadData(newHotData);
+                            }
+                        } else if (isArrayOfObjectsView) {
+                            // 액션 이름을 'insert_col_start'로 변경하고, 인덱스를 targetCol + 1로 조정
+                            hot.alter('insert_col_start', targetCol + 1, 1, 'custom_insert_col_right_array_of_objects');
+                        } else {
+                            showConfirmationPopup({ title: '작업 불가', text: '현재 데이터 보기 방식에서는 이 열 삽입 작업을 지원하지 않습니다.', icon: 'error', hotInstance: hot });
+                        }
+                    }
+                },
                 "remove_row": { name: '선택한 행 삭제' },
-                "remove_col": { name: '선택한 열 삭제' },
+                "remove_col": {
+                    name: '선택한 열 삭제',
+                    hidden: function() {
+                        const hotMenu = this;
+                        const selection = hotMenu.getSelectedRangeLast();
+                        if (!selection) return true;
+
+                        const isExpandedArrayView = typeof data === 'object' && data !== null && !Array.isArray(data) && Object.keys(data).length > 0 && Object.keys(data).every(k => Array.isArray(data[k]));
+                        const isArrayOfObjectsView = Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0]);
+
+                        if (isExpandedArrayView) {
+                            if (selection.from.col === 0) return true; // '항목 (Key)' 열은 삭제 불가
+                            // 실제 데이터가 있는 열인지 (패딩/빈 열이 아닌지) 확인
+                            const firstDataArrayKey = Object.keys(data).find(k => Array.isArray(data[k]));
+                            if (firstDataArrayKey && data[firstDataArrayKey] && (selection.from.col > data[firstDataArrayKey].length) ) {
+                                return true; // 배열 길이를 넘어선 (패딩) 열이면 삭제 메뉴 숨김
+                            }
+                            return false;
+                        }
+                        if (isArrayOfObjectsView) {
+                            const colHeaders = hotMenu.getColHeader();
+                            return !(Array.isArray(colHeaders) && colHeaders.length > 0 && selection.from.col < colHeaders.length); // 유효한 헤더와 선택된 열인지 확인
+                        }
+                        return true;
+                    },
+                    callback: async function(_key, selectionCallbackArg) {
+                        const hot = this;
+                        if (!selectionCallbackArg || selectionCallbackArg.length === 0 || !selectionCallbackArg[0] || !selectionCallbackArg[0].start) return;
+                        // Handsontable은 여러 열을 한 번에 삭제하는 것을 'physicalRows' 대신 'physicalCols'로 다룰 수 있지만,
+                        // 컨텍스트 메뉴는 보통 단일 열 기준으로 동작하므로 첫 번째 선택 기준으로 처리합니다.
+                        // 또는 selectionCallbackArg.forEach(range => ...) 로 모든 선택 범위 처리 가능. 여기선 주 선택 기준으로.
+                        const targetCol = selectionCallbackArg[0].start.col;
+
+                        const isExpandedArrayView = typeof data === 'object' && data !== null && !Array.isArray(data) && Object.keys(data).length > 0 && Object.keys(data).every(k => Array.isArray(data[k]));
+                        const isArrayOfObjectsView = Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0]);
+
+                        if (isExpandedArrayView) {
+                            if (targetCol === 0) {
+                                showConfirmationPopup({ title: '오류', text: "'항목 (Key)' 열은 삭제할 수 없습니다.", icon: 'error', hotInstance: hot });
+                                return;
+                            }
+                            const arrayIndexToRemove = targetCol - 1; // 실제 배열 인덱스
+                            let modified = false;
+                            Object.keys(data).forEach(objKey => {
+                                if (Array.isArray(data[objKey])) {
+                                    if (arrayIndexToRemove >= 0 && arrayIndexToRemove < data[objKey].length) {
+                                        data[objKey].splice(arrayIndexToRemove, 1);
+                                        modified = true;
+                                    }
+                                }
+                            });
+                            if (modified) {
+                                config.refreshTreeViewCallback('col_removed_expanded_array_view');
+                                const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(data, dataKeyName, config);
+                                cellMetaMap = newMapForMeta;
+                                hot.updateSettings({ colHeaders: newColHeaders });
+                                hot.loadData(newHotData);
+                            }
+                        } else if (isArrayOfObjectsView) {
+                            // beforeRemoveCol/afterRemoveCol 훅에서 처리하도록 Handsontable에 알림
+                            hot.alter('remove_col', targetCol, 1, 'custom_remove_col_array_of_objects');
+                        } else {
+                            showConfirmationPopup({ title: '작업 불가', text: '현재 데이터 보기 방식에서는 이 열 삭제 작업을 지원하지 않습니다.', icon: 'error', hotInstance: hot });
+                        }
+                    }
+                },
                 "---------": Handsontable.plugins.ContextMenu.SEPARATOR,
                 "duplicate_row": {
                     name: "선택 행 복제",
-                    hidden: function() { const s = this.getSelectedRangeLast(); return !s ? true : !(Array.isArray(data) || (typeof data === 'object' && data !== null && !Array.isArray(data))); },
+                    hidden: function() { const s = this.getSelectedRangeLast(); return !s || !(Array.isArray(data) || (typeof data === 'object' && data !== null && !Array.isArray(data))); },
                     callback: async function(_key, selection) {
                         const hot = this;
                         const startRow = selection[0].start.row;
                         if (Array.isArray(data)) {
                             if (startRow >= 0 && startRow < data.length) {
-                                const clonedItem = JSON.parse(JSON.stringify(data[startRow]));
+                                const clonedItem = deepClone(data[startRow]);
                                 data.splice(startRow + 1, 0, clonedItem);
                                 config.refreshTreeViewCallback('row_duplicated_array_hot');
-
-                                const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(data, dataKeyName, config);
-                                cellMetaMap = newMap;
-                                hot.updateSettings({ colHeaders: preparedColHeaders });
-                                hot.loadData(preparedHotData);
+                                const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(data, dataKeyName, config);
+                                cellMetaMap = newMapForMeta;
+                                hot.updateSettings({ colHeaders: newColHeaders });
+                                hot.loadData(newHotData);
                             }
                         } else if (typeof data === 'object' && data !== null) {
                             const objectKeys = Object.keys(data);
@@ -254,91 +438,76 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                             let newKeySuggestion = newKeyBase;
                             let counter = 1;
                             while (data.hasOwnProperty(newKeySuggestion)) { newKeySuggestion = `${newKeyBase}_${counter++}`; }
-
-                            showTextInputPopup({
-                                title: '새 키 입력 (행 복제)',
-                                inputValue: newKeySuggestion,
-                                confirmButtonText: '복제',
+                            const res = await showTextInputPopup({
+                                title: '새 키 입력 (행 복제)', inputValue: newKeySuggestion, confirmButtonText: '복제',
                                 inputValidator:(v)=>{const n=v.trim();if(!n)return '키 이름은 비워둘 수 없습니다!';if(n!==originalKey&&data.hasOwnProperty(n))return '이미 사용 중인 키입니다.';return null;},
                                 hotInstance: hot
-                            }).then(res => {
-                                if (res.isConfirmed && res.value !== undefined) {
-                                    const finalNewKey = res.value.trim();
-                                    const clonedValue = JSON.parse(JSON.stringify(data[originalKey]));
-                                    const orderedData = {};
-                                    for (const k_ of Object.keys(data)) {
-                                        orderedData[k_] = data[k_];
-                                        if (k_ === originalKey) orderedData[finalNewKey] = clonedValue;
-                                    }
-                                    Object.keys(data).forEach(k_d => delete data[k_d]);
-                                    Object.assign(data, orderedData);
-
-                                    config.refreshTreeViewCallback('row_duplicated_object_hot_ordered');
-                                    const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(data, dataKeyName, config);
-                                    cellMetaMap = newMap;
-                                    hot.updateSettings({ colHeaders: preparedColHeaders });
-                                    hot.loadData(preparedHotData);
-                                }
                             });
+                            if (res.isConfirmed && res.value !== undefined) {
+                                const finalNewKey = res.value.trim();
+                                const clonedValue = deepClone(data[originalKey]);
+                                const orderedData = {};
+                                for (const k_ of Object.keys(data)) {
+                                    orderedData[k_] = data[k_];
+                                    if (k_ === originalKey) orderedData[finalNewKey] = clonedValue;
+                                }
+                                Object.keys(data).forEach(k_d => delete data[k_d]);
+                                Object.assign(data, orderedData);
+                                config.refreshTreeViewCallback('row_duplicated_object_hot_ordered');
+                                const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(data, dataKeyName, config);
+                                cellMetaMap = newMapForMeta;
+                                hot.updateSettings({ colHeaders: newColHeaders });
+                                hot.loadData(newHotData);
+                            }
                         }
                     }
                 },
                 "duplicate_col": {
                     name: "선택 열 복제",
-                    hidden: function() { const s = this.getSelectedRangeLast(); return !s ? true : !(Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0])); },
+                    hidden: function() { const s = this.getSelectedRangeLast(); return !s || !(Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0])); },
                     callback: async function(_key, selection) {
                         const hot = this;
                         const startCol = selection[0].start.col;
                         const currentHeaders = hot.getColHeader();
-
                         if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null && !Array.isArray(data[0]) && Array.isArray(currentHeaders) && startCol >= 0 && startCol < currentHeaders.length) {
                             const originalHeader = currentHeaders[startCol];
                             if (typeof originalHeader !== 'string') return;
-
                             let newHeaderBase = originalHeader + "_복제본";
                             let newHeaderSuggestion = newHeaderBase;
                             let counter = 1;
                             while (data[0].hasOwnProperty(newHeaderSuggestion)) { newHeaderSuggestion = `${newHeaderBase}_${counter++}`; }
-
-                            showTextInputPopup({
-                                title: '새 열 키 입력 (열 복제)',
-                                inputValue: newHeaderSuggestion,
-                                confirmButtonText: '복제',
+                            const res = await showTextInputPopup({
+                                title: '새 열 키 입력 (열 복제)', inputValue: newHeaderSuggestion, confirmButtonText: '복제',
                                 inputValidator: (v) => { const n = v.trim(); if (!n) return '키 이름은 비워둘 수 없습니다!'; if (data.length > 0 && data[0].hasOwnProperty(n) && n !== originalHeader) return '첫 번째 객체에 이미 해당 키가 존재합니다.'; return null; },
                                 hotInstance: hot
-                            }).then(res => {
-                                if (res.isConfirmed && res.value !== undefined) {
-                                    const finalNewHeader = res.value.trim();
-                                    data.forEach(obj => {
-                                        if (typeof obj === 'object' && obj !== null) {
-                                            const clonedColumnValue = obj.hasOwnProperty(originalHeader) ? JSON.parse(JSON.stringify(obj[originalHeader])) : null;
-
-                                            const newOrderedObj = {};
-                                            let inserted = false;
-                                            for (const currentKeyInLoop in obj) {
-                                                if (obj.hasOwnProperty(currentKeyInLoop)) {
-                                                    newOrderedObj[currentKeyInLoop] = obj[currentKeyInLoop];
-                                                    if (currentKeyInLoop === originalHeader) {
-                                                        newOrderedObj[finalNewHeader] = clonedColumnValue;
-                                                        inserted = true;
-                                                    }
+                            });
+                            if (res.isConfirmed && res.value !== undefined) {
+                                const finalNewHeader = res.value.trim();
+                                data.forEach(obj => {
+                                    if (typeof obj === 'object' && obj !== null) {
+                                        const clonedColumnValue = obj.hasOwnProperty(originalHeader) ? deepClone(obj[originalHeader]) : null;
+                                        const newOrderedObj = {};
+                                        let inserted = false;
+                                        for (const currentKeyInLoop in obj) {
+                                            if (obj.hasOwnProperty(currentKeyInLoop)) {
+                                                newOrderedObj[currentKeyInLoop] = obj[currentKeyInLoop];
+                                                if (currentKeyInLoop === originalHeader) {
+                                                    newOrderedObj[finalNewHeader] = clonedColumnValue;
+                                                    inserted = true;
                                                 }
                                             }
-                                            if (!inserted) {
-                                                newOrderedObj[finalNewHeader] = clonedColumnValue;
-                                            }
-
-                                            Object.keys(obj).forEach(k_o => delete obj[k_o]);
-                                            Object.assign(obj, newOrderedObj);
                                         }
-                                    });
-                                    config.refreshTreeViewCallback('col_duplicated_array_obj_hot_ordered');
-                                    const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(data, dataKeyName, config);
-                                    cellMetaMap = newMap;
-                                    hot.updateSettings({ colHeaders: preparedColHeaders });
-                                    hot.loadData(preparedHotData);
-                                }
-                            });
+                                        if (!inserted) newOrderedObj[finalNewHeader] = clonedColumnValue;
+                                        Object.keys(obj).forEach(k_o => delete obj[k_o]);
+                                        Object.assign(obj, newOrderedObj);
+                                    }
+                                });
+                                config.refreshTreeViewCallback('col_duplicated_array_obj_hot_ordered');
+                                const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(data, dataKeyName, config);
+                                cellMetaMap = newMapForMeta;
+                                hot.updateSettings({ colHeaders: newColHeaders });
+                                hot.loadData(newHotData);
+                            }
                         }
                     }
                 },
@@ -362,83 +531,131 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         const path = getPathForHotChange(r, c, structureInfo);
                         return path === null;
                     },
-                    callback: async function(_key, selection) {
+                    callback: async function(_key, selectionArg) {
                         const hotMenu = this;
-                        const cellCoords = selection[0].start ? selection[0].start : selection[0].from;
-                        const r = cellCoords.row;
-                        const c = cellCoords.col;
-
-                        if (hotMenu && typeof hotMenu.deselectCell === 'function') {
-                            hotMenu.deselectCell();
-                        }
+                        if (hotMenu && typeof hotMenu.deselectCell === 'function') hotMenu.deselectCell();
 
                         const currentAvailableTemplates = config.getTemplates();
                         if (!currentAvailableTemplates || currentAvailableTemplates.length === 0) {
-                            showConfirmationPopup({ title: '알림', text: '사용 가능한 템플릿이 없습니다. 먼저 템플릿을 추가해주세요.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
+                            showConfirmationPopup({ title: '알림', text: '사용 가능한 템플릿이 없습니다.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
+                            return;
+                        }
+                        const templateOptions = {};
+                        currentAvailableTemplates.forEach((template, index) => { templateOptions[`tpl_idx_${index}`] = template.name; });
+
+                        const { value: selectedTemplateKey } = await Swal.fire({
+                            title: '템플릿 선택', input: 'select', inputOptions: templateOptions, inputPlaceholder: '적용할 템플릿을 선택하세요',
+                            showCancelButton: true, confirmButtonText: '다음', cancelButtonText: '취소', customClass: { popup: 'custom-swal-popup' }
+                        });
+
+                        if (!selectedTemplateKey) {
+                            showConfirmationPopup({ title: '취소됨', text: '템플릿 선택이 취소되었습니다.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
                             return;
                         }
 
-                        const templateOptions = {};
-                        currentAvailableTemplates.forEach((template, index) => {
-                            templateOptions[`tpl_idx_${index}`] = template.name;
+                        const templateIndex = parseInt(selectedTemplateKey.replace('tpl_idx_', ''), 10);
+                        const selectedTemplateObject = currentAvailableTemplates[templateIndex];
+                        const templateValueToApply = selectedTemplateObject.value;
+
+                        const choiceResult = await Swal.fire({
+                            title: '템플릿 적용 방식', text: `"${selectedTemplateObject.name}" 템플릿을 선택한 셀에 어떻게 적용하시겠습니까?`,
+                            showDenyButton: true, showCancelButton: true, confirmButtonText: '완전 덮어쓰기', denyButtonText: '병합 (규칙 적용)',
+                            cancelButtonText: '취소', icon: 'question', customClass: { popup: 'custom-swal-popup' }
                         });
 
-                        const { value: selectedTemplateKey } = await Swal.fire({
-                            title: '템플릿 선택 (Select Template)',
-                            input: 'select',
-                            inputOptions: templateOptions,
-                            inputPlaceholder: '적용할 템플릿을 선택하세요',
-                            showCancelButton: true,
-                            confirmButtonText: '적용 (Apply)',
-                            cancelButtonText: '취소 (Cancel)',
-                            customClass: { popup: 'custom-swal-popup' }
-                        });
+                        let applyMode = null;
+                        if (choiceResult.isConfirmed) applyMode = 'overwrite';
+                        else if (choiceResult.isDenied) applyMode = 'merge';
+                        else {
+                            showConfirmationPopup({ title: '취소됨', text: '템플릿 적용 방식 선택이 취소되었습니다.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
+                            return;
+                        }
 
-                        if (selectedTemplateKey) {
-                            const templateIndex = parseInt(selectedTemplateKey.replace('tpl_idx_', ''), 10);
-                            const selectedTemplateObject = currentAvailableTemplates[templateIndex].value;
-                            const stringifiedTemplate = JSON.stringify(selectedTemplateObject);
+                        const rootJsonContext = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
+                        let actualChangesMade = false;
+                        const colHeadersArray = hotMenu.getColHeader();
 
-                            const colHeadersArray = hotMenu.getColHeader();
-                            const structureInfo = {
-                                sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
-                                isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
-                                cellMetaMap: cellMetaMap
-                            };
-                            const pathToUpdate = getPathForHotChange(r, c, structureInfo);
+                        for (const range of selectionArg) {
+                            const startCoords = range.start;
+                            const endCoords = range.end;
 
-                            if (pathToUpdate !== null) {
-                                config.updateJsonDataCallback(pathToUpdate, stringifiedTemplate, false);
-                                let updatedViewData = data;
-                                const rootJsonContext = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
-                                if (config.dataPathString) {
-                                    updatedViewData = config.getObjectByPathCallback(rootJsonContext, config.dataPathString);
-                                } else {
-                                    updatedViewData = rootJsonContext;
-                                }
-                                if (updatedViewData === undefined) {
-                                    updatedViewData = (pathToUpdate.includes('[') || pathToUpdate.includes('.')) ? {} : null;
-                                }
-                                const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(updatedViewData, dataKeyName, config);
-                                cellMetaMap = newMap;
-                                hotMenu.updateSettings({ colHeaders: preparedColHeaders });
-                                hotMenu.loadData(preparedHotData);
-                            } else {
-                                showConfirmationPopup({ title: '오류', text: '템플릿을 적용할 수 없는 셀입니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
+                            if (!startCoords || !endCoords) {
+                                console.warn('Skipping invalid range object in selection:', range);
+                                continue;
                             }
+
+                            const r_start = Math.min(startCoords.row, endCoords.row); const r_end = Math.max(startCoords.row, endCoords.row);
+                            const c_start = Math.min(startCoords.col, endCoords.col); const c_end = Math.max(startCoords.col, endCoords.col);
+
+                            for (let r = r_start; r <= r_end; r++) {
+                                for (let c = c_start; c <= c_end; c++) {
+                                    const structureInfo = {
+                                        sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
+                                        isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
+                                        cellMetaMap: cellMetaMap
+                                    };
+                                    const pathToUpdate = getPathForHotChange(r, c, structureInfo);
+                                    if (pathToUpdate === null) continue;
+
+                                    const originalCellValue = config.getObjectByPathCallback(rootJsonContext, pathToUpdate);
+                                    let newValueForCell;
+
+                                    if (applyMode === 'overwrite') {
+                                        newValueForCell = deepClone(templateValueToApply);
+                                    } else {
+                                        const originalIsObject = typeof originalCellValue === 'object' && originalCellValue !== null && !Array.isArray(originalCellValue);
+                                        const templateIsObject = typeof templateValueToApply === 'object' && templateValueToApply !== null && !Array.isArray(templateValueToApply);
+
+                                        if (originalIsObject && templateIsObject) {
+                                            newValueForCell = {}; // 최종 결과를 담을 새 객체 (키 순서 제어)
+
+                                            const templateKeys = Object.keys(templateValueToApply);
+                                            for (const key of templateKeys) {
+                                                if (Object.prototype.hasOwnProperty.call(templateValueToApply, key)) {
+                                                    if (Object.prototype.hasOwnProperty.call(originalCellValue, key)) {
+                                                        // 규칙: 같은 키가 존재하면 원래 셀의 값을 사용 (덮어쓰지 않음)
+                                                        newValueForCell[key] = deepClone(originalCellValue[key]);
+                                                    } else {
+                                                        // 규칙: 템플릿에만 있는 키는 템플릿의 값으로 추가
+                                                        newValueForCell[key] = deepClone(templateValueToApply[key]);
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            newValueForCell = deepClone(templateValueToApply);
+                                        }
+                                    }
+                                    config.updateJsonDataCallback(pathToUpdate, JSON.stringify(newValueForCell), true);
+                                    actualChangesMade = true;
+                                }
+                            }
+                        }
+
+                        if (actualChangesMade) {
+                            let finalViewData = data;
+                            if (config.dataPathString) finalViewData = config.getObjectByPathCallback(rootJsonContext, config.dataPathString);
+                            else finalViewData = rootJsonContext;
+                            if (finalViewData === undefined) finalViewData = {};
+
+                            const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(finalViewData, dataKeyName, config);
+                            cellMetaMap = newMapForMeta;
+                            hotMenu.updateSettings({ colHeaders: newColHeaders });
+                            hotMenu.loadData(newHotData);
+                            config.refreshTreeViewCallback('template_applied_batch');
+                            showConfirmationPopup({ title: '완료', text: '선택한 셀에 템플릿이 적용되었습니다.', icon: 'success', showCancelButton: false, hotInstance: hotMenu });
+                        } else {
+                            showConfirmationPopup({ title: '알림', text: '템플릿을 적용할 유효한 셀이 없거나 변경사항이 없습니다.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
                         }
                     }
                 },
                 "add_as_template": {
-                    name: '템플릿에 추가',
+                    name: '선택 셀 값을 템플릿에 추가',
                     hidden: function() {
                         const hotMenu = this;
                         const selection = hotMenu.getSelectedRangeLast();
                         if (!selection) return true;
                         const { from } = selection;
-                        const r = from.row;
-                        const c = from.col;
-
+                        const r = from.row; const c = from.col;
                         const colHeadersArray = hotMenu.getColHeader();
                         const structureInfo = {
                             sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
@@ -447,18 +664,14 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         };
                         const path = getPathForHotChange(r, c, structureInfo);
                         if (path === null) return true;
-
                         const rootJsonContext = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
                         const cellValue = config.getObjectByPathCallback(rootJsonContext, path);
-
                         return !(typeof cellValue === 'object' && cellValue !== null);
                     },
                     callback: async function(_key, selection) {
                         const hotMenu = this;
-                        const cellCoords = selection[0].start ? selection[0].start : selection[0].from;
-                        const r = cellCoords.row;
-                        const c = cellCoords.col;
-
+                        const startCoords = selection[0].start; // Corrected from cellCoords
+                        const r = startCoords.row; const c = startCoords.col; // Corrected
                         const colHeadersArray = hotMenu.getColHeader();
                         const structureInfo = {
                             sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
@@ -467,47 +680,51 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                         };
                         const path = getPathForHotChange(r, c, structureInfo);
                         if (path === null) return;
-
                         const rootJsonContext = config.currentJsonDataRef ? config.currentJsonDataRef() : config.rootJsonData;
                         const cellValue = config.getObjectByPathCallback(rootJsonContext, path);
-
                         if (!(typeof cellValue === 'object' && cellValue !== null)) {
                             showConfirmationPopup({ title: '알림', text: '객체 또는 배열 형식의 값만 템플릿으로 추가할 수 있습니다.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
                             return;
                         }
-
-                        if (hotMenu && typeof hotMenu.deselectCell === 'function') {
-                            hotMenu.deselectCell();
-                        }
-
+                        if (hotMenu && typeof hotMenu.deselectCell === 'function') hotMenu.deselectCell();
                         const { value: templateName } = await showTextInputPopup({
-                            title: '새 템플릿 이름 입력',
-                            inputLabel: '저장할 템플릿의 이름을 입력하세요:',
-                            inputValue: '',
-                            confirmButtonText: '추가',
-                            inputValidator: (value) => {
-                                const trimmedVal = value.trim();
-                                if (!trimmedVal) return '템플릿 이름은 비워둘 수 없습니다.';
-                                const existingTemplates = config.getTemplates();
-                                if (existingTemplates.some(t => t.name === trimmedVal)) {
-                                    return '이미 사용중인 템플릿 이름입니다.';
-                                }
-                                return null;
-                            },
+                            title: '새 템플릿 이름 입력 (셀 값)', inputLabel: '저장할 템플릿의 이름을 입력하세요:', inputValue: '', confirmButtonText: '추가',
+                            inputValidator: (value) => { const trimmedVal = value.trim(); if (!trimmedVal) return '템플릿 이름은 비워둘 수 없습니다.'; if (config.getTemplates().some(t => t.name === trimmedVal)) return '이미 사용중인 템플릿 이름입니다.'; return null; },
                             hotInstance: hotMenu
                         });
-
                         if (templateName && templateName.trim()) {
                             const type = Array.isArray(cellValue) ? "array" : "object";
-                            const addResult = config.addTemplate(templateName.trim(), type, cellValue);
-
-                            if (addResult === true) {
-                                showConfirmationPopup({ title: '성공', text: `템플릿 "${templateName.trim()}"이(가) 추가되었습니다.`, icon: 'success', showCancelButton: false, hotInstance: hotMenu });
-                            } else if (addResult === 'duplicate_name') {
-                                showConfirmationPopup({ title: '오류', text: `템플릿 이름 "${templateName.trim()}"이(가) 이미 존재합니다. 다른 이름을 사용해주세요.`, icon: 'error', showCancelButton: false, hotInstance: hotMenu });
-                            } else {
-                                showConfirmationPopup({ title: '오류', text: '템플릿 추가에 실패했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
-                            }
+                            const valueToSave = deepClone(cellValue);
+                            const addResult = config.addTemplate(templateName.trim(), type, valueToSave);
+                            if (addResult === true) showConfirmationPopup({ title: '성공', text: `템플릿 "${templateName.trim()}"이(가) 추가되었습니다.`, icon: 'success', showCancelButton: false, hotInstance: hotMenu });
+                            else if (addResult === 'duplicate_name') showConfirmationPopup({ title: '오류', text: `템플릿 이름 "${templateName.trim()}"이(가) 이미 존재합니다.`, icon: 'error', showCancelButton: false, hotInstance: hotMenu });
+                            else showConfirmationPopup({ title: '오류', text: '템플릿 추가에 실패했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
+                        }
+                    }
+                },
+                "add_current_view_as_template": {
+                    name: '현재 테이블 뷰를 템플릿에 추가',
+                    hidden: function() { return !(typeof data === 'object' && data !== null); },
+                    callback: async function() {
+                        const hotMenu = this;
+                        if (hotMenu && typeof hotMenu.deselectCell === 'function') hotMenu.deselectCell();
+                        if (!(typeof data === 'object' && data !== null)) {
+                            showConfirmationPopup({ title: '알림', text: '템플릿으로 추가할 수 있는 데이터(객체/배열)가 아닙니다.', icon: 'info', showCancelButton: false, hotInstance: hotMenu });
+                            return;
+                        }
+                        const { value: templateName } = await showTextInputPopup({
+                            title: '새 템플릿 이름 입력 (현재 뷰)', inputLabel: '저장할 템플릿의 이름을 입력하세요:',
+                            inputValue: dataKeyName ? `${dataKeyName}_view_template` : 'current_view_template', confirmButtonText: '추가',
+                            inputValidator: (value) => { const trimmedVal = value.trim(); if (!trimmedVal) return '템플릿 이름은 비워둘 수 없습니다.'; if (config.getTemplates().some(t => t.name === trimmedVal)) return '이미 사용중인 템플릿 이름입니다.'; return null; },
+                            hotInstance: hotMenu
+                        });
+                        if (templateName && templateName.trim()) {
+                            const templateType = Array.isArray(data) ? "array" : "object";
+                            const valueToSave = deepClone(data);
+                            const addResult = config.addTemplate(templateName.trim(), templateType, valueToSave);
+                            if (addResult === true) showConfirmationPopup({ title: '성공', text: `템플릿 "${templateName.trim()}"이(가) 현재 뷰를 기반으로 추가되었습니다.`, icon: 'success', showCancelButton: false, hotInstance: hotMenu });
+                            else if (addResult === 'duplicate_name') showConfirmationPopup({ title: '오류', text: `템플릿 이름 "${templateName.trim()}"이(가) 이미 존재합니다.`, icon: 'error', showCancelButton: false, hotInstance: hotMenu });
+                            else showConfirmationPopup({ title: '오류', text: '템플릿 추가에 실패했습니다.', icon: 'error', showCancelButton: false, hotInstance: hotMenu });
                         }
                     }
                 },
@@ -539,7 +756,6 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
             const { row, col } = coords;
             const meta = cellMetaMap.get(`${row}-${col}`);
             const DOUBLE_CLICK_THRESHOLD = 300;
-
             let isDoubleClick = false;
             if (meta && row === lastClickInfo.row && col === lastClickInfo.col && (currentTime - lastClickInfo.time) < DOUBLE_CLICK_THRESHOLD) {
                 isDoubleClick = true;
@@ -547,7 +763,6 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
             } else {
                 lastClickInfo = { row, col, time: currentTime };
             }
-
             if (isDoubleClick) {
                 let isObjectKeyCell = false;
                 const colHeaders = this.getColHeader();
@@ -558,9 +773,8 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                     const originalKey = meta.originalKey;
                     const parentObject = data;
                     const parentPath = config.dataPathString;
-
                     showTextInputPopup({
-                        title: `키 이름 변경: "${originalKey}"`, inputValue: originalKey, customClass: { popup: 'custom-swal-popup' }, confirmButtonText: '저장',
+                        title: `키 이름 변경: "${originalKey}"`, inputValue: originalKey, confirmButtonText: '저장',
                         inputValidator: (v) => { const n = v.trim(); if (!n) return '키 이름은 비워둘 수 없습니다!'; if (parentObject.hasOwnProperty(n) && n !== originalKey) return '이미 사용 중인 키입니다!'; return null; },
                         hotInstance: this
                     }).then(res => {
@@ -587,32 +801,24 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
             if (source === 'loadData' || !changes || !Array.isArray(changes) || changes.length === 0) return;
             const isBatchOperation = (source === 'CopyPaste.paste' || source === 'Autofill.fill' || changes.length > 1);
             const colHeadersArray = this.getColHeader();
-
             changes.forEach(([row, prop, oldValue, newValue]) => {
                 let actualColumnIndex = -1;
-                if (typeof prop === 'number') { actualColumnIndex = prop; }
-                else if (typeof prop === 'string' && Array.isArray(colHeadersArray)) { actualColumnIndex = colHeadersArray.indexOf(prop); }
-
+                if (typeof prop === 'number') actualColumnIndex = prop;
+                else if (typeof prop === 'string' && Array.isArray(colHeadersArray)) actualColumnIndex = colHeadersArray.indexOf(prop);
                 if (actualColumnIndex === -1) {
-                    if (typeof prop === 'number' && colHeadersArray === true) { actualColumnIndex = prop; }
+                    if (typeof prop === 'number' && colHeadersArray === true) actualColumnIndex = prop;
                     else { console.warn("afterChange: 컬럼 인덱스 결정 불가:", row, prop, colHeadersArray); return; }
                 }
-
                 const structureInfoForPath = {
                     sourceData: data, pathPrefix: config.dataPathString, headers: Array.isArray(colHeadersArray) ? colHeadersArray : (colHeadersArray === true ? [] : []),
                     isSourceArray: Array.isArray(data), isSourceArrayOfObjects: Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0]) && data[0] !== null,
                     cellMetaMap: cellMetaMap
                 };
                 let pathToUpdate = getPathForHotChange(row, actualColumnIndex, structureInfoForPath);
-
                 if (pathToUpdate !== null) {
                     config.updateJsonDataCallback(pathToUpdate, String(newValue), isBatchOperation, oldValue);
-                    if (typeof config.convertToTypedValueCallback(String(newValue), oldValue) !== typeof oldValue && oldValue !== null ) {
-                    }
-
                 }
             });
-
             if (isBatchOperation && config.refreshTreeViewCallback) {
                 config.refreshTreeViewCallback("batch_update_handsontable_afterChange");
             }
@@ -622,27 +828,22 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
             const hot = this;
             let currentViewData = data;
             let dataWasModified = false;
-
             if (Array.isArray(currentViewData)) {
                 const columnHeaders = hot.getColHeader();
                 for (let i = 0; i < amount; i++) {
                     let newItem = null;
                     if (Array.isArray(columnHeaders) && columnHeaders.length > 0 && (columnHeaders.length !==2 || columnHeaders[0] !== "Index" || columnHeaders[1] !== "Value")) {
                         newItem = {};
-                        columnHeaders.forEach(headerKey => {
-                            if (typeof headerKey === 'string') { newItem[headerKey] = null; }
-                        });
+                        columnHeaders.forEach(headerKey => { if (typeof headerKey === 'string') newItem[headerKey] = null; });
                     }
                     currentViewData.splice(index + i, 0, newItem);
                 }
                 dataWasModified = true;
                 if (dataWasModified) config.refreshTreeViewCallback('row_added_array_hot');
-
             } else if (typeof currentViewData === 'object' && currentViewData !== null && !Array.isArray(currentViewData)) {
                 (async () => {
                     let tempObjectData = { ...currentViewData };
                     let keysAddedSuccessCount = 0;
-
                     for (let i = 0; i < amount; i++) {
                         const visualIndexToInsertAt = index + i;
                         const popupResult = await showTextInputPopup({
@@ -650,7 +851,6 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                             inputValidator: (value) => { const trimmedValue = value.trim(); if (!trimmedValue) return '키 이름은 비워둘 수 없습니다!'; if (tempObjectData.hasOwnProperty(trimmedValue)) return '이미 사용 중인 키입니다.'; return null; },
                             hotInstance: hot
                         });
-
                         if (popupResult.isConfirmed && popupResult.value !== undefined) {
                             const newKey = popupResult.value.trim();
                             const valueToInsert = null;
@@ -658,38 +858,32 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                             const newStructuredObject = {};
                             let keyInserted = false;
                             for (let k_idx = 0; k_idx < currentKeysInOrder.length; k_idx++) {
-                                if (k_idx === visualIndexToInsertAt && !keyInserted) {
-                                    newStructuredObject[newKey] = valueToInsert;
-                                    keyInserted = true;
-                                }
+                                if (k_idx === visualIndexToInsertAt && !keyInserted) { newStructuredObject[newKey] = valueToInsert; keyInserted = true; }
                                 newStructuredObject[currentKeysInOrder[k_idx]] = tempObjectData[currentKeysInOrder[k_idx]];
                             }
                             if (!keyInserted) newStructuredObject[newKey] = valueToInsert;
                             tempObjectData = newStructuredObject;
                             keysAddedSuccessCount++;
-                        } else { break; }
+                        } else break;
                     }
-
                     if (keysAddedSuccessCount > 0) {
                         Object.keys(currentViewData).forEach(key => delete currentViewData[key]);
                         Object.assign(currentViewData, tempObjectData);
                         dataWasModified = true;
                         config.refreshTreeViewCallback('key_added_object_hot_ordered');
                     }
-
-                    const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
-                    cellMetaMap = newMap;
-                    hot.updateSettings({ colHeaders: preparedColHeaders });
-                    hot.loadData(preparedHotData);
+                    const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(currentViewData, dataKeyName, config);
+                    cellMetaMap = newMapForMeta;
+                    hot.updateSettings({ colHeaders: newColHeaders });
+                    hot.loadData(newHotData);
                 })();
                 return;
             }
-
             if (dataWasModified || source !== 'loadData') {
-                const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
-                cellMetaMap = newMap;
-                hot.updateSettings({ colHeaders: preparedColHeaders });
-                hot.loadData(preparedHotData);
+                const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(currentViewData, dataKeyName, config);
+                cellMetaMap = newMapForMeta;
+                hot.updateSettings({ colHeaders: newColHeaders });
+                hot.loadData(newHotData);
             }
         },
         afterCreateCol: function(index, amount, source) {
@@ -697,7 +891,6 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
             const hot = this;
             let currentViewData = data;
             let dataWasModified = false;
-
             if (Array.isArray(currentViewData) && currentViewData.length > 0 && typeof currentViewData[0] === 'object' && currentViewData[0] !== null && !Array.isArray(currentViewData[0])) {
                 (async () => {
                     for (let i = 0; i < amount; i++) {
@@ -707,7 +900,6 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                             inputValidator: (value) => { const trimmedValue = value.trim(); if (!trimmedValue) return '키 이름은 비워둘 수 없습니다!'; if (currentViewData[0].hasOwnProperty(trimmedValue)) return '첫 번째 객체에 이미 해당 키가 존재합니다.'; return null; },
                             hotInstance: hot
                         });
-
                         if (popupResult.isConfirmed && popupResult.value !== undefined) {
                             const newKeyName = popupResult.value.trim();
                             currentViewData.forEach(obj => {
@@ -715,9 +907,8 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                                     const currentKeys = Object.keys(obj);
                                     const newOrderedObj = {};
                                     let inserted = false;
-                                    if (visualColIndexToInsertAt >= currentKeys.length) {
-                                        obj[newKeyName] = null;
-                                    } else {
+                                    if (visualColIndexToInsertAt >= currentKeys.length) obj[newKeyName] = null;
+                                    else {
                                         for(let k_idx=0; k_idx < currentKeys.length; k_idx++) {
                                             if (k_idx === visualColIndexToInsertAt && !inserted) { newOrderedObj[newKeyName] = null; inserted = true; }
                                             newOrderedObj[currentKeys[k_idx]] = obj[currentKeys[k_idx]];
@@ -729,66 +920,58 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                                 }
                             });
                             dataWasModified = true;
-                        } else { break; }
+                        } else break;
                     }
                     if (dataWasModified) config.refreshTreeViewCallback('col_added_array_of_obj_hot_ordered');
-
-                    const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
-                    cellMetaMap = newMap;
-                    hot.updateSettings({ colHeaders: preparedColHeaders });
-                    hot.loadData(preparedHotData);
+                    const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(currentViewData, dataKeyName, config);
+                    cellMetaMap = newMapForMeta;
+                    hot.updateSettings({ colHeaders: newColHeaders });
+                    hot.loadData(newHotData);
                 })();
                 return;
             } else if (typeof currentViewData === 'object' && currentViewData !== null && !Array.isArray(currentViewData)) {
                 showConfirmationPopup({ title: '오류', text: '현재 데이터 구조에는 열을 추가할 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: hot })
                     .then(() => {
-                        const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
-                        cellMetaMap = newMap;
-                        hot.updateSettings({ colHeaders: preparedColHeaders });
-                        hot.loadData(preparedHotData);
+                        const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(currentViewData, dataKeyName, config);
+                        cellMetaMap = newMapForMeta;
+                        hot.updateSettings({ colHeaders: newColHeaders });
+                        hot.loadData(newHotData);
                     });
             } else {
                 showConfirmationPopup({ title: '오류', text: '현재 데이터 구조에는 열을 추가할 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: hot });
-                const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
-                cellMetaMap = newMap;
-                hot.updateSettings({ colHeaders: preparedColHeaders });
-                hot.loadData(preparedHotData);
+                const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(currentViewData, dataKeyName, config);
+                cellMetaMap = newMapForMeta;
+                hot.updateSettings({ colHeaders: newColHeaders });
+                hot.loadData(newHotData);
             }
         },
         beforeRemoveRow: function(index, amount, physicalRows, source) {
             if (source === 'loadData' || !config.currentJsonDataRef) return true;
             let currentViewData = data;
             physicalRows.sort((a, b) => b - a);
-
             if (Array.isArray(currentViewData)) {
-                physicalRows.forEach(rowIndex => {
-                    if (rowIndex >= 0 && rowIndex < currentViewData.length) { currentViewData.splice(rowIndex, 1); }
-                });
+                physicalRows.forEach(rowIndex => { if (rowIndex >= 0 && rowIndex < currentViewData.length) currentViewData.splice(rowIndex, 1); });
             } else if (typeof currentViewData === 'object' && currentViewData !== null && !Array.isArray(currentViewData)) {
                 const keys = Object.keys(currentViewData);
                 const keysToRemove = physicalRows.map(rowIndex => keys[rowIndex]).filter(key => key !== undefined);
-                if (keysToRemove.length > 0) { keysToRemove.forEach(key => { delete currentViewData[key]; });}
-            } else {
-                return false;
-            }
+                if (keysToRemove.length > 0) keysToRemove.forEach(key => { delete currentViewData[key]; });
+            } else return false;
             return true;
         },
         afterRemoveRow: function(index, amount, physicalRows, source) {
             if (source === 'loadData' || !config.currentJsonDataRef || source === 'ContextMenu.remove_row_custom') return;
             const hot = this;
             let currentViewData = data;
-
             config.refreshTreeViewCallback('row_removed_hot');
-            const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
-            cellMetaMap = newMap;
-            hot.updateSettings({ colHeaders: preparedColHeaders });
-            hot.loadData(preparedHotData);
+            const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(currentViewData, dataKeyName, config);
+            cellMetaMap = newMapForMeta;
+            hot.updateSettings({ colHeaders: newColHeaders });
+            hot.loadData(newHotData);
         },
         beforeRemoveCol: function(index, amount, physicalCols, source) {
             if (source === 'loadData' || !config.currentJsonDataRef) return true;
             let currentViewData = data;
             const colHeaders = this.getColHeader();
-
             if (Array.isArray(currentViewData) && currentViewData.length > 0 && typeof currentViewData[0] === 'object' && currentViewData[0] !== null && !Array.isArray(currentViewData[0])) {
                 if (!Array.isArray(colHeaders)) { showConfirmationPopup({ title: '오류', text: '열 헤더 정보를 가져올 수 없습니다.', icon: 'error', showCancelButton: false, hotInstance: this }); return false; }
                 physicalCols.sort((a, b) => b - a);
@@ -796,9 +979,7 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
                     if (colIndex >= 0 && colIndex < colHeaders.length) {
                         const keyToRemove = colHeaders[colIndex];
                         if (typeof keyToRemove === 'string') {
-                            currentViewData.forEach(obj => {
-                                if (typeof obj === 'object' && obj !== null) { delete obj[keyToRemove]; }
-                            });
+                            currentViewData.forEach(obj => { if (typeof obj === 'object' && obj !== null) delete obj[keyToRemove]; });
                         }
                     }
                 });
@@ -815,12 +996,11 @@ export function displayDataWithHandsontable(data, dataKeyName, config) {
             if (source === 'loadData' || !config.currentJsonDataRef) return;
             const hot = this;
             let currentViewData = data;
-
             config.refreshTreeViewCallback('col_removed_hot');
-            const { preparedHotData, preparedColHeaders, preparedCellMetaMap: newMap } = _prepareTableData(currentViewData, dataKeyName, config);
-            cellMetaMap = newMap;
-            hot.updateSettings({ colHeaders: preparedColHeaders });
-            hot.loadData(preparedHotData);
+            const { preparedHotData: newHotData, preparedColHeaders: newColHeaders, preparedCellMetaMap: newMapForMeta } = _prepareTableData(currentViewData, dataKeyName, config);
+            cellMetaMap = newMapForMeta;
+            hot.updateSettings({ colHeaders: newColHeaders });
+            hot.loadData(newHotData);
         }
     });
     return hotInstance;
