@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON 테이블 편집기</title>
-  <script type="module" crossorigin src="/JsonTableEditer/assets/index-BaS59AvD.js"></script>
-  <link rel="stylesheet" crossorigin href="/JsonTableEditer/assets/index-D-_RYS6e.css">
+  <script type="module" crossorigin src="/JsonTableEditer/assets/index-C0zxm6aK.js"></script>
+  <link rel="stylesheet" crossorigin href="/JsonTableEditer/assets/index-Dnp6soSb.css">
 </head>
 <body>
 
@@ -18,6 +18,7 @@
     <button id="saveToCSV" title="수정 된 json을 csv로 저장">💾 CSV로 저장</button>
     <button id="encodeUrlBtn" title="입력된 내용을 URL 인코딩합니다">🔗 URL 인코딩</button>
     <button id="decodeUrlBtn" title="입력된 내용을 URL 디코딩합니다">🔓 URL 디코딩</button>
+    <button id="toggleSchemaEditorBtn" title="스키마 편집기 열기/닫기">📜 스키마 편집기</button>
 </div>
 <div class="theme-switcher">
     <button class="theme-button" id="theme-btn-1" title="[Dark] Blue" style="background-color: var(--color-warning);"></button>
@@ -55,6 +56,15 @@
                 </select>
                 <div id="searchResultsDropdown" class="search-results-dropdown"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="schemaEditorPanelContainer" style="display: none; flex-direction: column; flex-grow: 1; width: 100%; height: 100%">
+    <div class="panel">
+        <h2 class="tab_title">JSON 스키마 편집기</h2>
+        <div id="schema-editor-content-area" style="flex-grow:1; overflow-y:auto; padding: var(--spacing-md);">
+            <p>여기에 스키마 편집기 UI가 로드됩니다. (예: 타입 선택, 속성 추가/편집 등)</p>
         </div>
     </div>
 </div>
