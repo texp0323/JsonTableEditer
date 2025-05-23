@@ -46,16 +46,16 @@
     </div>
 
     <div class="resizer-vertical" id="resizer-2"></div> <div class="panel table-view-panel"> <h2 class="tab_title">데이터 테이블 뷰</h2>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="검색어를 입력 하세요">
+            <select id="searchTargetSelect">
+                <option value="both">Key & Value</option>
+                <option value="key">Key Only</option>
+                <option value="value">Value Only</option>
+            </select>
+            <div id="searchResultsDropdown" class="search-results-dropdown"></div>
+        </div>
         <div id="table-view">
-            <div class="search-container">
-                <input type="text" id="searchInput" placeholder="검색어를 입력 하세요">
-                <select id="searchTargetSelect">
-                    <option value="both">Key & Value</option>
-                    <option value="key">Key Only</option>
-                    <option value="value">Value Only</option>
-                </select>
-                <div id="searchResultsDropdown" class="search-results-dropdown"></div>
-            </div>
         </div>
     </div>
 </div>
